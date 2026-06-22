@@ -30,8 +30,8 @@ A **100% customizable** PvP-focused progression system for Minecraft Spigot serv
 - **Death Penalty**: Players drop their shards on death in danger worlds
 
 ### World System
-- **Safe Worlds**: Preparation zones where shards provide NO benefits
-- **Danger Worlds**: PvP zones where progression happens and shards are active
+- **Safe Worlds**: Preparation zones where shards work but cannot be obtained
+- **Danger Worlds**: PvP zones where shards can be obtained and death causes shard loss
 - **Multi-World Support**: Add unlimited danger worlds to configuration
 
 ### Item Security
@@ -107,11 +107,11 @@ You should see:
 ### The Core Loop
 
 ```
-1. Enter Danger World → Shards become active
-2. Kill Players → Gain Strength Shards
-3. Hold Shards → Get stronger (+damage, +speed)
-4. Become Target → Other players want your shards
-5. Die → Drop all shards
+1. Gather Shards in Danger World → Kill players for shards
+2. Hold Shards → Get stronger (+damage, +speed) IN ALL WORLDS
+3. Travel to Safe World → Keep your power, but can't get more shards
+4. Return to Danger World → Risk your shards to obtain more
+5. Die in Danger World → Drop all shards
 6. Repeat → Risk/reward cycle
 ```
 
@@ -132,19 +132,19 @@ You should see:
 | 20 | +20% | +20% | 🔴 Maximum |
 | 20+ | +20% (capped) | +20% (capped) | 🔴 Maximum |
 
-#### **World Behavior**
+### World Behavior
 
 **Safe Worlds:**
-- ✅ Players can move shards
-- ✅ Players can store shards
-- ❌ Shards provide NO damage bonus
-- ❌ Shards provide NO speed bonus
-- ❌ Cannot obtain new shards
-- ❌ Shards do not drop on death
+- ✅ Shards provide full damage bonus
+- ✅ Shards provide full speed bonus
+- ✅ Players can move and use shards freely
+- ❌ Cannot obtain new shards from PvP
+- ❌ Shards do NOT drop on death
 
 **Danger Worlds:**
 - ✅ All stat bonuses active
 - ✅ PvP kills grant shards
+- ✅ Full risk-reward gameplay
 - ❌ Death drops all shards
 - ⚠️ High risk, high reward
 
@@ -344,9 +344,9 @@ The system listens to these events:
 ### Shards Not Providing Bonuses
 
 **Check:**
-1. Are you in a **danger world**? (Use `/ss check <player>` to verify)
-2. Are shards in your **inventory** (not chests)?
-3. Is the script loaded? (Use `/sk list` to check)
+1. Are shards in your **inventory** (not chests)?
+2. Is the script loaded? (Use `/sk list` to check)
+3. Check the action bar for shard count display
 
 **Solution:**
 ```
@@ -370,15 +370,14 @@ The system listens to these events:
 ### Damage Bonus Not Working
 
 **Check:**
-1. Attack happened in **danger world**?
-2. Attacker has shards in inventory?
-3. Debug mode shows damage calculation?
+1. Attacker has shards in inventory?
+2. Debug mode shows damage calculation?
 
 **Debug Steps:**
 ```
 1. Edit config.sk → Set debug-mode: true
 2. /sk reload strength-shard-system
-3. Test PvP → Check console for debug messages
+3. Test combat → Check console for debug messages
 ```
 
 ### Script Won't Load
@@ -459,6 +458,12 @@ A: No, only player vs player (or player vs entity) damage in danger worlds.
 ---
 
 ## 📝 Version History
+
+### v1.1.0 (2026-06-22)
+- ✅ Shards now work in ALL worlds (safe and danger)
+- ✅ Shards can only be OBTAINED in danger worlds (PvP)
+- ✅ Updated messaging to reflect world behavior
+- ✅ Improved player experience and flexibility
 
 ### v1.0.0 (2026-06-22)
 - ✅ Initial release

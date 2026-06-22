@@ -1,11 +1,12 @@
 # ========================================
 # STRENGTH SHARD SYSTEM - MAIN SCRIPT
 # ========================================
-# Version: 1.0.0
+# Version: 1.1.0
 # Compatible with Skript 2.15.3 and SkBee 3.25
 # 
 # A PvP-focused progression system where players gain power by holding
-# Strength Shards in their inventory, but lose them on death.
+# Strength Shards in their inventory. Shards work in ALL worlds, but
+# can only be obtained through PvP in danger worlds.
 # ========================================
 
 # Load configuration options from config.sk
@@ -77,13 +78,7 @@ function countShardsInInventory(player: player) :: number:
 
 # ===== STAT CALCULATION =====
 function updatePlayerStats(player: player):
-    # Only update if in danger world
-    if isDangerWorld(world of {_player}) is false:
-        # Reset stats in safe world
-        set {_player}'s walk speed to 0.2
-        delete {shard-count::%{_player}%}
-        stop
-    
+    # Shards now work in ALL worlds (safe and danger)
     # Count current shards
     set {_count} to countShardsInInventory({_player})
     
@@ -114,19 +109,18 @@ function updatePlayerStats(player: player):
         send action bar {_msg} to {_player}
 
 # ===== DAMAGE MODIFIER =====
-# Apply damage bonus when player attacks
+# Apply damage bonus when player attacks (works in ALL worlds)
 on damage:
     if attacker is a player:
-        if isDangerWorld(world of attacker) is true:
-            if {shard-count::%attacker%} is set:
-                set {_count} to {shard-count::%attacker%}
-                if {_count} is greater than 0:
-                    set {_bonus} to {_count} * {@damage-per-shard}
-                    set {_multiplier} to 1 + ({_bonus} / 100)
-                    set damage to damage * {_multiplier}
-                    
-                    if {@debug-mode} is true:
-                        send "&7[DEBUG] %attacker% dealt damage with +%{_bonus}%%% bonus" to console
+        if {shard-count::%attacker%} is set:
+            set {_count} to {shard-count::%attacker%}
+            if {_count} is greater than 0:
+                set {_bonus} to {_count} * {@damage-per-shard}
+                set {_multiplier} to 1 + ({_bonus} / 100)
+                set damage to damage * {_multiplier}
+                
+                if {@debug-mode} is true:
+                    send "&7[DEBUG] %attacker% dealt damage with +%{_bonus}%%% bonus" to console
 
 # ===== PERIODIC STAT UPDATE =====
 every {@update-interval} ticks:
@@ -170,9 +164,9 @@ on world change:
     
     # Notify player about danger/safe zone
     if isDangerWorld(event-world) is true:
-        send colored "{@message-prefix}&eYou entered a danger world! Your Strength Shards are now active." to player
+        send colored "{@message-prefix}&eYou entered a danger world! You can now obtain Strength Shards from PvP." to player
     else:
-        send colored "{@message-prefix}&aYou entered a safe world. Your Strength Shards provide no benefits here." to player
+        send colored "{@message-prefix}&aYou entered a safe world. Your shards still work, but you cannot obtain new ones here." to player
 
 # ===== PVP DEATH HANDLING =====
 on death of player:
@@ -274,7 +268,7 @@ command /strengthshard [<text>] [<player>] [<integer>]:
     permission: strengthshard.admin
     trigger:
         if arg-1 is not set:
-            send colored "{@message-prefix}&eStrength Shard System &7v1.0.0"
+            send colored "{@message-prefix}&eStrength Shard System &7v1.1.0"
             send colored "&7/ss give <player> [amount] &f- Give Strength Shards"
             send colored "&7/ss remove <player> [amount] &f- Remove Strength Shards"
             send colored "&7/ss check <player> &f- Check player's shard count"
@@ -349,15 +343,17 @@ on quit:
 
 # ===== SCRIPT LOAD MESSAGE =====
 on script load:
-    send colored "&8[&d⚔&8] &dStrength Shard System &7v1.0.0 &aLOADED" to console
+    send colored "&8[&d⚔&8] &dStrength Shard System &7v1.1.0 &aLOADED" to console
     send colored "&7- Danger Worlds: &e{@danger-worlds}" to console
     send colored "&7- Max Effective Shards: &e{@max-effective-shards}" to console
     send colored "&7- Stats per Shard: &e+{@damage-per-shard}%% damage, +{@speed-per-shard}%% speed" to console
+    send colored "&7- Shards work in: &aALL WORLDS" to console
+    send colored "&7- Shards obtainable in: &cDANGER WORLDS ONLY" to console
     if {@debug-mode} is true:
         send colored "&c⚠ Debug mode is ENABLED" to console
 
 on script unload:
-    send colored "&8[&d⚔&8] &dStrength Shard System &7v1.0.0 &cUNLOADED" to console
+    send colored "&8[&d⚔&8] &dStrength Shard System &7v1.1.0 &cUNLOADED" to console
     # Reset all players' speeds
     loop all players:
         set loop-player's walk speed to 0.2
