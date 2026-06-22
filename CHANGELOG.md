@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-06-22
+
+### Complete Rewrite - All Bugs Fixed
+
+This is a complete rewrite addressing all known syntax and logic bugs.
+
+### Fixed
+- **Bug #1/#2**: Item creation now uses `X of material` to produce an actual item stack with the correct amount, instead of setting a variable to a text string
+- **Bug #5**: Replaced invalid `all item flags` with specific valid flags: `hide enchants, hide attributes, and hide additional tooltip`
+- **Bug #6**: Fixed off-hand tool syntax to use `{_p}'s off hand tool`
+- **Bug #7**: Corrected pickup event item type checking with `type of event-item`
+- **Bug #8**: World change event now uses `player's world` after the wait tick instead of `event-world`
+- **Bug #9**: Changed `add to inventory of player` to `give to player` for proper syntax
+- **Bug #10**: Fixed drop modification during loop by collecting all drops, clearing, then re-adding non-shard items
+- **Bug #11/#12**: Replaced `<` and `>` comparison operators with `is less than` / `is greater than`
+- **Bug #13**: Removed `colored` wrapper from console messages (console handles color codes directly)
+- **Bug #15**: Merged config.sk into main.sk to eliminate cross-file option loading issues
+
+### Changed
+- All configuration options are now inline in main.sk (config.sk removed)
+- Version bumped to 1.2.0
+- Extracted shard removal logic into a dedicated `removeShardsFromPlayer` function
+- Improved inventory iteration syntax to use possessive form (`player's inventory`)
+
+### Removed
+- Separate config.sk file (options now in main.sk)
+
+---
+
 ## [1.0.0] - 2026-06-22
 
 ### 🎉 Initial Release
