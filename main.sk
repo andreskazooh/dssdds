@@ -126,16 +126,10 @@ function isDangerWorld(w: world) :: boolean:
 function countShardsInInventory(p: player) :: number:
     set {_total} to 0
     
-    # Count shards in main inventory
+    # Count shards in inventory (includes offhand since player inventory contains all slots)
     loop all items in {_p}'s inventory:
         if isStrengthShard(loop-item) is true:
             add item amount of loop-item to {_total}
-    
-    # Count off-hand if enabled
-    if {@count-offhand-shards} is true:
-        set {_offhand} to {_p}'s off hand tool
-        if isStrengthShard({_offhand}) is true:
-            add item amount of {_offhand} to {_total}
     
     # Cap at max effective amount
     if {_total} is greater than {@max-effective-shards}:
