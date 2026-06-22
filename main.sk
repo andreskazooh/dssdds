@@ -1,7 +1,7 @@
 # ========================================
 # STRENGTH SHARD SYSTEM - MAIN SCRIPT
 # ========================================
-# Version: 1.1.0
+# Version: 1.1.1
 # Compatible with Skript 2.15.3 and SkBee 3.25
 # 
 # A PvP-focused progression system where players gain power by holding
@@ -154,6 +154,17 @@ on drop:
     updatePlayerStats(player)
 
 on pick up:
+    # Prevent picking up natural Echo Shards FIRST (before updating stats)
+    if {@prevent-natural-echo-shards} is true:
+        if event-item's type is {@shard-material}:
+            if isStrengthShard(event-item) is false:
+                cancel event
+                send colored "{@message-prefix}{@msg-shard-restricted}" to player
+                if {@debug-mode} is true:
+                    send "&7[DEBUG] Prevented %player% from picking up natural echo shard" to console
+                stop
+    
+    # Update player stats after successful pickup
     wait 1 tick
     updatePlayerStats(player)
 
@@ -228,8 +239,6 @@ on death of player:
         delete {last-shard-count::%victim%}
 
 # ===== PREVENT NATURAL ECHO SHARDS =====
-# Note: This event is here for documentation purposes
-# The actual prevention is handled in inventory open and pickup events below
 
 # Prevent Echo Shards from chest loot
 on inventory open:
@@ -245,16 +254,6 @@ on inventory open:
                             if {@debug-mode} is true:
                                 send "&7[DEBUG] Removed natural echo shard from %event-inventory%" to console
 
-# Prevent picking up natural Echo Shards
-on pick up:
-    if {@prevent-natural-echo-shards} is true:
-        if event-item's type is {@shard-material}:
-            if isStrengthShard(event-item) is false:
-                cancel event
-                send colored "{@message-prefix}{@msg-shard-restricted}" to player
-                if {@debug-mode} is true:
-                    send "&7[DEBUG] Prevented %player% from picking up natural echo shard" to console
-
 # Prevent placing shards
 on place:
     if {@prevent-shard-placement} is true:
@@ -268,7 +267,7 @@ command /strengthshard [<text>] [<player>] [<integer>]:
     permission: strengthshard.admin
     trigger:
         if arg-1 is not set:
-            send colored "{@message-prefix}&eStrength Shard System &7v1.1.0"
+            send colored "{@message-prefix}&eStrength Shard System &7v1.1.1"
             send colored "&7/ss give <player> [amount] &f- Give Strength Shards"
             send colored "&7/ss remove <player> [amount] &f- Remove Strength Shards"
             send colored "&7/ss check <player> &f- Check player's shard count"
@@ -321,7 +320,7 @@ command /strengthshard [<text>] [<player>] [<integer>]:
             send colored "{@message-prefix}&aReloading Strength Shard System..." to sender
             # Note: Skript doesn't support runtime config reloading
             # User must manually reload the script with /sk reload
-            send colored "{@message-prefix}&ePlease use &f/sk reload strength-shard-system &eto apply changes" to sender
+            send colored "{@message-prefix}&ePlease use &f/sk reload main &eor &f/sk reload all &eto apply changes" to sender
         
         else if arg-1 is "debug":
             if {@debug-mode} is true:
@@ -343,7 +342,7 @@ on quit:
 
 # ===== SCRIPT LOAD MESSAGE =====
 on script load:
-    send colored "&8[&d⚔&8] &dStrength Shard System &7v1.1.0 &aLOADED" to console
+    send colored "&8[&d⚔&8] &dStrength Shard System &7v1.1.1 &aLOADED" to console
     send colored "&7- Danger Worlds: &e{@danger-worlds}" to console
     send colored "&7- Max Effective Shards: &e{@max-effective-shards}" to console
     send colored "&7- Stats per Shard: &e+{@damage-per-shard}%% damage, +{@speed-per-shard}%% speed" to console
@@ -353,7 +352,7 @@ on script load:
         send colored "&c⚠ Debug mode is ENABLED" to console
 
 on script unload:
-    send colored "&8[&d⚔&8] &dStrength Shard System &7v1.1.0 &cUNLOADED" to console
+    send colored "&8[&d⚔&8] &dStrength Shard System &7v1.1.1 &cUNLOADED" to console
     # Reset all players' speeds
     loop all players:
         set loop-player's walk speed to 0.2
