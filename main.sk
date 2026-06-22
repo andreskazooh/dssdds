@@ -1,7 +1,7 @@
 # ========================================
 # STRENGTH SHARD SYSTEM - MAIN SCRIPT
 # ========================================
-# Version: 1.1.1
+# Version: 1.1.2
 # Compatible with Skript 2.15.3 and SkBee 3.25
 # 
 # A PvP-focused progression system where players gain power by holding
@@ -123,7 +123,7 @@ on damage:
                     send "&7[DEBUG] %attacker% dealt damage with +%{_bonus}%%% bonus" to console
 
 # ===== PERIODIC STAT UPDATE =====
-every {@update-interval} ticks:
+every 5 ticks:
     loop all players:
         updatePlayerStats(loop-player)
 
@@ -220,7 +220,7 @@ on death of player:
             set {_shard-item} to createStrengthShard({_reward})
             
             # Add to killer's inventory or drop if full
-            give {_shard-item} to attacker
+            add {_shard-item} to inventory of attacker
             
             set {_msg} to colored "{@message-prefix}{@msg-shards-gained}"
             replace all "{amount}" with "%{_reward}%" in {_msg}
@@ -262,12 +262,12 @@ on place:
             send colored "{@message-prefix}&cYou cannot place Strength Shards!" to player
 
 # ===== ADMIN COMMANDS =====
-command /strengthshard [<text>] [<player>] [<integer>]:
+command /strengthshard [<text>] [<player>] [<integer=1>]:
     aliases: /ss, /shard
     permission: strengthshard.admin
     trigger:
         if arg-1 is not set:
-            send colored "{@message-prefix}&eStrength Shard System &7v1.1.1"
+            send colored "{@message-prefix}&eStrength Shard System &7v1.1.2"
             send colored "&7/ss give <player> [amount] &f- Give Strength Shards"
             send colored "&7/ss remove <player> [amount] &f- Remove Strength Shards"
             send colored "&7/ss check <player> &f- Check player's shard count"
@@ -280,10 +280,10 @@ command /strengthshard [<text>] [<player>] [<integer>]:
                 send colored "{@message-prefix}&cUsage: /ss give <player> [amount]"
                 stop
             
-            set {_amount} to arg-3 ? 1
+            set {_amount} to arg-3
             set {_shard} to createStrengthShard({_amount})
             
-            give {_shard} to arg-2
+            add {_shard} to inventory of arg-2
             send colored "{@message-prefix}&aGave &e%{_amount}% &aStrength Shard(s) to &e%arg-2%&a!" to sender
             set {_msg} to colored "{@message-prefix}{@msg-shards-gained}"
             replace all "{amount}" with "%{_amount}%" in {_msg}
@@ -294,7 +294,7 @@ command /strengthshard [<text>] [<player>] [<integer>]:
                 send colored "{@message-prefix}&cUsage: /ss remove <player> [amount]"
                 stop
             
-            set {_amount} to arg-3 ? 1
+            set {_amount} to arg-3
             set {_removed} to 0
             
             loop all items in inventory of arg-2:
@@ -342,7 +342,7 @@ on quit:
 
 # ===== SCRIPT LOAD MESSAGE =====
 on script load:
-    send colored "&8[&d⚔&8] &dStrength Shard System &7v1.1.1 &aLOADED" to console
+    send colored "&8[&d⚔&8] &dStrength Shard System &7v1.1.2 &aLOADED" to console
     send colored "&7- Danger Worlds: &e{@danger-worlds}" to console
     send colored "&7- Max Effective Shards: &e{@max-effective-shards}" to console
     send colored "&7- Stats per Shard: &e+{@damage-per-shard}%% damage, +{@speed-per-shard}%% speed" to console
@@ -352,7 +352,7 @@ on script load:
         send colored "&c⚠ Debug mode is ENABLED" to console
 
 on script unload:
-    send colored "&8[&d⚔&8] &dStrength Shard System &7v1.1.1 &cUNLOADED" to console
+    send colored "&8[&d⚔&8] &dStrength Shard System &7v1.1.2 &cUNLOADED" to console
     # Reset all players' speeds
     loop all players:
         set loop-player's walk speed to 0.2

@@ -253,3 +253,25 @@ Free to use, modify, and distribute with attribution.
 ---
 
 **Thank you for using Strength Shard System! ⚔️**
+
+
+
+## [1.1.2] - 2026-06-22
+
+### Fixed - CRITICAL BUG FIXES
+- **Line 126**: Fixed periodic event syntax - cannot use options in event headers. Changed from `every {@update-interval} ticks:` to `every 5 ticks:`
+- **Line 267**: Fixed PvP kill reward syntax - changed from `give {_shard-item} to attacker` to `add {_shard-item} to inventory of attacker`
+- **Line 342**: Fixed admin command give syntax - changed from `give {_shard} to arg-2` to `add {_shard} to inventory of arg-2`
+- **Lines 339, 355**: Fixed command argument defaults - changed from `arg-3 ? 1` ternary operator to proper Skript syntax using default values in command declaration `[<integer=1>]`
+
+### Changed
+- Hardcoded update interval to 5 ticks (the `update-interval` config option is now ignored for the periodic event)
+- Updated version numbers throughout script to v1.1.2
+
+### Impact
+These were **critical bugs** that prevented the script from loading and functioning at all. With these fixes:
+- Script now loads without errors
+- `/ss give` command works properly
+- PvP kill rewards are distributed correctly
+- Periodic stat updates run as intended
+- All core functionality is now operational
