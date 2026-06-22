@@ -18,9 +18,9 @@
 # {last-shard-count::%player%} = last known count for change detection
 
 # ===== CUSTOM ITEM CREATION =====
-function createStrengthShard(amount: number = 1) :: item:
+function createStrengthShard(amt: number = 1) :: item:
     set {_shard} to {@shard-material}
-    set amount of {_shard} to {_amount}
+    set amount of {_shard} to {_amt}
     set name of {_shard} to colored {@shard-name}
     
     # Parse lore lines
