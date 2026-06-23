@@ -15,7 +15,7 @@ options:
     # ===== WORLD SETTINGS =====
     # Define which worlds are danger zones where Strength Shards can be obtained
     # Use | to separate multiple worlds
-    danger-worlds: world_danger
+    danger-worlds: dangerworld|danger_nether|danger_end
     
     # ===== STRENGTH SHARD PROPERTIES =====
     # The base material for Strength Shards
@@ -25,37 +25,37 @@ options:
     shard-name: &d&lStrength Shard
     
     # Lore for the Strength Shard (use | to separate lines)
-    shard-lore: &7Each shard in your inventory grants:|&e+1%% Damage|&e+1%% Movement Speed|&c Warning: Lost on death in danger worlds!|&7Maximum: 20 shards
+    shard-lore: &7Each shard in your inventory grants:|&e+5%% Damage|&e+5%% Movement Speed|&c Can only be found in a the non keep-inventory world|&7Maximum: 30 shards
     
     # Custom model data for the shard (set to 0 to disable)
     shard-custom-model-data: 0
     
     # ===== PROGRESSION STATS =====
     # Damage bonus per shard (percentage)
-    damage-per-shard: 1
+    damage-per-shard: 5
     
     # Movement speed bonus per shard (percentage)
-    speed-per-shard: 1
+    speed-per-shard: 5
     
     # Maximum number of shards that provide benefits
-    max-effective-shards: 20
+    max-effective-shards: 30
     
     # ===== PVP KILL REWARDS =====
     # Min shards gained on kill
-    min-shards-on-kill: 1
+    min-shards-on-kill: 0
     
     # Max shards gained on kill
-    max-shards-on-kill: 2
+    max-shards-on-kill: 1
     
     # Whether killer also gets victim's dropped shards info
     killer-gets-victim-shards: true
     
     # ===== DEATH PENALTIES =====
     # Whether players drop ALL shards on death in danger worlds
-    drop-all-shards-on-death: true
+    drop-all-shards-on-death: false
     
     # If drop-all-shards-on-death is false, percentage to drop (0-100)
-    percent-shards-dropped: 100
+    percent-shards-dropped: 75
     
     # ===== ITEM RESTRICTIONS =====
     # Prevent Echo Shards from spawning naturally
@@ -142,6 +142,14 @@ function countShardsInInventory(p: player) :: number:
 function updatePlayerStats(p: player):
     # Count current shards (works in ALL worlds)
     set {_count} to countShardsInInventory({_p})
+    
+    # Check if count changed (skip if unchanged to save performance)
+    # Note: must check "is set" first because unset variable compared to 0 returns true in Skript
+    if {last-shard-count::%{_p}%} is set:
+        if {last-shard-count::%{_p}%} is {_count}:
+            stop
+    
+    set {last-shard-count::%{_p}%} to {_count}
     set {shard-count::%{_p}%} to {_count}
     
     # Calculate bonuses
@@ -155,7 +163,7 @@ function updatePlayerStats(p: player):
     if {@debug-mode} is true:
         send "[DEBUG] Updated stats for %{_p}%: %{_count}% shards, +%{_damage-bonus}%%% damage, +%{_speed-bonus}%%% speed" to console
     
-    # Display stats to player if they have shards
+    # Display stats to player
     if {_count} is greater than 0:
         set {_msg} to colored "{@message-prefix}{@msg-stats-display}"
         replace all "{count}" with "%{_count}%" in {_msg}
@@ -199,6 +207,9 @@ every 5 ticks:
 # ===== PLAYER JOIN =====
 on join:
     wait 5 ticks
+    # Force stat recalculation by clearing cached count first
+    delete {last-shard-count::%player%}
+    delete {shard-count::%player%}
     updatePlayerStats(player)
 
 # ===== INVENTORY CHANGE DETECTION =====
@@ -394,6 +405,7 @@ command /strengthshard [<text>] [<player>] [<integer=1>]:
 # ===== PLAYER DISCONNECT CLEANUP =====
 on quit:
     delete {shard-count::%player%}
+    delete {last-shard-count::%player%}
     set player's walk speed to 0.2
 
 # ===== SCRIPT LOAD MESSAGE =====
@@ -414,3 +426,4 @@ on script unload:
     loop all players:
         set loop-player's walk speed to 0.2
         delete {shard-count::%loop-player%}
+        delete {last-shard-count::%loop-player%}
