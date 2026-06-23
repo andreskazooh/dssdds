@@ -198,12 +198,14 @@ function updatePlayerStats(p: player):
                 execute console command "team modify shardcarriers prefix {""text"":""+  "",""color"":""aqua""}"
                 execute console command "team join shardcarriers %{_p}%"
                 set {shard-tagged::%{_p}%} to true
+            set {_p}'s display name to "&b+ &r%name of {_p}%"
+            set {_p}'s tab list name to "&b+ &r%name of {_p}%"
         else:
             if {shard-tagged::%{_p}%} is set:
                 execute console command "team leave %{_p}%"
                 delete {shard-tagged::%{_p}%}
-        set {_p}'s display name to "&b+ &r%name of {_p}%"
-        set {_p}'s tab list name to "&b+ &r%name of {_p}%"
+            set {_p}'s display name to name of {_p}
+            set {_p}'s tab list name to name of {_p}
         if {_p}'s tool is {@shard-material}:
             set {_msg} to colored "{@message-prefix}{@msg-stats-display}"
             replace all "{count}" with "%{_count}%" in {_msg}
