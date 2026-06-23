@@ -80,7 +80,7 @@ options:
     debug-mode: false
     
     # Minimum shards to show the blue + tag above player name
-    tag-min-shards: 5
+    tag-min-shards: 10
     
     # Count shards in off-hand
     count-offhand-shards: true
