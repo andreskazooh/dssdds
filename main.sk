@@ -142,14 +142,6 @@ function countShardsInInventory(p: player) :: number:
 function updatePlayerStats(p: player):
     # Count current shards (works in ALL worlds)
     set {_count} to countShardsInInventory({_p})
-    
-    # Check if count changed (skip if unchanged to save performance)
-    # Note: must check "is set" first because unset variable compared to 0 returns true in Skript
-    if {last-shard-count::%{_p}%} is set:
-        if {last-shard-count::%{_p}%} is {_count}:
-            stop
-    
-    set {last-shard-count::%{_p}%} to {_count}
     set {shard-count::%{_p}%} to {_count}
     
     # Calculate bonuses
@@ -163,7 +155,7 @@ function updatePlayerStats(p: player):
     if {@debug-mode} is true:
         send "[DEBUG] Updated stats for %{_p}%: %{_count}% shards, +%{_damage-bonus}%%% damage, +%{_speed-bonus}%%% speed" to console
     
-    # Display stats to player
+    # Display stats to player if they have shards
     if {_count} is greater than 0:
         set {_msg} to colored "{@message-prefix}{@msg-stats-display}"
         replace all "{count}" with "%{_count}%" in {_msg}
@@ -207,9 +199,6 @@ every 5 ticks:
 # ===== PLAYER JOIN =====
 on join:
     wait 5 ticks
-    # Force stat recalculation by clearing cached count first
-    delete {last-shard-count::%player%}
-    delete {shard-count::%player%}
     updatePlayerStats(player)
 
 # ===== INVENTORY CHANGE DETECTION =====
@@ -405,7 +394,6 @@ command /strengthshard [<text>] [<player>] [<integer=1>]:
 # ===== PLAYER DISCONNECT CLEANUP =====
 on quit:
     delete {shard-count::%player%}
-    delete {last-shard-count::%player%}
     set player's walk speed to 0.2
 
 # ===== SCRIPT LOAD MESSAGE =====
@@ -426,4 +414,3 @@ on script unload:
     loop all players:
         set loop-player's walk speed to 0.2
         delete {shard-count::%loop-player%}
-        delete {last-shard-count::%loop-player%}
