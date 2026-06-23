@@ -82,6 +82,17 @@ options:
     # Minimum shards to show the blue + tag above player name
     tag-min-shards: 10
     
+    # Shard decay - slowly lose shards when above this threshold
+    # Set to 0 to disable decay
+    decay-threshold: 10
+    
+    # How often a shard is removed (in seconds) when above decay threshold
+    decay-interval: 60
+    
+    # Maximum shards a player can physically hold in their inventory
+    # Any shards above this are automatically removed
+    max-shards-in-inventory: 15
+    
     # Count shards in off-hand
     count-offhand-shards: true
 
@@ -144,10 +155,16 @@ function countShardsInInventory(p: player) :: number:
     return {_total}
 
 # ===== STAT CALCULATION =====
-# Bug fix #14: "send action bar" syntax is correct in Skript 2.15.3
 function updatePlayerStats(p: player):
     # Count current shards (works in ALL worlds)
     set {_count} to countShardsInInventory({_p})
+    
+    # Enforce hard cap - remove excess shards
+    if {_count} is greater than {@max-shards-in-inventory}:
+        set {_excess} to {_count} - {@max-shards-in-inventory}
+        removeShardsFromPlayer({_p}, {_excess})
+        send colored "{@message-prefix}&cYou had too many shards! &e%{_excess}% &cwere removed." to {_p}
+        set {_count} to {@max-shards-in-inventory}
     set {shard-count::%{_p}%} to {_count}
     
     # Auto-refresh lore on existing shards so config changes apply immediately
@@ -242,6 +259,24 @@ on damage:
 every 5 ticks:
     loop all players:
         updatePlayerStats(loop-player)
+
+# ===== SHARD DECAY =====
+# Slowly removes shards from players above the decay threshold
+every 1 second:
+    if {@decay-threshold} is greater than 0:
+        loop all players:
+            set {_count} to countShardsInInventory(loop-player)
+            if {_count} is greater than {@decay-threshold}:
+                # Check if enough time has passed for decay
+                if {decay-timer::%loop-player%} is not set:
+                    set {decay-timer::%loop-player%} to 0
+                add 1 to {decay-timer::%loop-player%}
+                if {decay-timer::%loop-player%} is greater than or equal to {@decay-interval}:
+                    set {decay-timer::%loop-player%} to 0
+                    removeShardsFromPlayer(loop-player, 1)
+                    send colored "{@message-prefix}&eA Strength Shard has decayed from your inventory..." to loop-player
+            else:
+                delete {decay-timer::%loop-player%}
 
 # ===== PLAYER JOIN =====
 on join:
