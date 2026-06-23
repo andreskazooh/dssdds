@@ -388,9 +388,6 @@ on craft of recovery compass:
     cancel event
     send colored "{@message-prefix}&cYou cannot craft with Strength Shards!" to player
 
-on preparing craft of recovery compass:
-    set event-item to air
-
 # ===== ADMIN COMMANDS =====
 command /strengthshard [<text>] [<player>] [<integer=1>]:
     aliases: /ss, /shard
