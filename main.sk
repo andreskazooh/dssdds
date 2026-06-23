@@ -152,6 +152,12 @@ function updatePlayerStats(p: player):
     set {last-shard-count::%{_p}%} to {_count}
     set {shard-count::%{_p}%} to {_count}
     
+    # Auto-refresh lore on existing shards so config changes apply immediately
+    loop all items in {_p}'s inventory:
+        if isStrengthShard(loop-item) is true:
+            set {_fresh} to createStrengthShard(item amount of loop-item)
+            set loop-item to {_fresh}
+    
     # Calculate bonuses
     set {_damage-bonus} to {_count} * {@damage-per-shard}
     set {_speed-bonus} to {_count} * {@speed-per-shard}
@@ -351,6 +357,7 @@ command /strengthshard [<text>] [<player>] [<integer=1>]:
             send colored "&7/ss give <player> [amount] &f- Give Strength Shards"
             send colored "&7/ss remove <player> [amount] &f- Remove Strength Shards"
             send colored "&7/ss check <player> &f- Check player's shard count"
+            send colored "&7/ss purge &f- Remove ALL shards from all online players"
             send colored "&7/ss reload &f- Reload configuration"
             send colored "&7/ss debug &f- Toggle debug mode"
             stop
@@ -390,6 +397,19 @@ command /strengthshard [<text>] [<player>] [<integer=1>]:
         else if arg-1 is "reload":
             send colored "{@message-prefix}&aReloading Strength Shard System..." to sender
             send colored "{@message-prefix}&ePlease use &f/sk reload main &eor &f/sk reload all &eto apply changes" to sender
+        
+        else if arg-1 is "purge":
+            # Remove all shards from every online player
+            set {_total} to 0
+            loop all players:
+                loop all items in loop-player's inventory:
+                    if isStrengthShard(loop-item) is true:
+                        add item amount of loop-item to {_total}
+                        set loop-item to air
+                set loop-player's walk speed to 0.2
+                delete {shard-count::%loop-player%}
+            send colored "{@message-prefix}&aRemoved &e%{_total}% &aStrength Shard(s) from all online players." to sender
+            send colored "{@message-prefix}&7Note: Shards in unloaded chunks or offline players cannot be removed." to sender
         
         else if arg-1 is "debug":
             if {@debug-mode} is true:
