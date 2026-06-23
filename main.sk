@@ -247,7 +247,7 @@ on inventory drag:
 
 on drop:
     # If player drops any echo shard (which can only be a Strength Shard), block it
-    if type of event-item is {@shard-material}:
+    if event-item is {@shard-material}:
         cancel event
         send colored "{@message-prefix}&cYou cannot drop Strength Shards!" to player
         stop
