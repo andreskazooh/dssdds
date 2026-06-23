@@ -156,15 +156,23 @@ function countShardsInInventory(p: player) :: number:
 
 # ===== STAT CALCULATION =====
 function updatePlayerStats(p: player):
-    # Count current shards (works in ALL worlds)
-    set {_count} to countShardsInInventory({_p})
+    # Count RAW shards for hard cap enforcement (uncapped)
+    set {_raw-count} to 0
+    loop all items in {_p}'s inventory:
+        if isStrengthShard(loop-item) is true:
+            add item amount of loop-item to {_raw-count}
     
     # Enforce hard cap - remove excess shards
-    if {_count} is greater than {@max-shards-in-inventory}:
-        set {_excess} to {_count} - {@max-shards-in-inventory}
+    if {_raw-count} is greater than {@max-shards-in-inventory}:
+        set {_excess} to {_raw-count} - {@max-shards-in-inventory}
         removeShardsFromPlayer({_p}, {_excess})
         send colored "{@message-prefix}&cYou had too many shards! &e%{_excess}% &cwere removed." to {_p}
-        set {_count} to {@max-shards-in-inventory}
+        set {_raw-count} to {@max-shards-in-inventory}
+    
+    # Use capped count for stats
+    set {_count} to {_raw-count}
+    if {_count} is greater than {@max-effective-shards}:
+        set {_count} to {@max-effective-shards}
     set {shard-count::%{_p}%} to {_count}
     
     # Auto-refresh lore on existing shards so config changes apply immediately
