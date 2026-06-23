@@ -380,6 +380,35 @@ on place:
             cancel event
             send colored "{@message-prefix}&cYou cannot place Strength Shards!" to player
 
+# Prevent placing shards in item frames
+on rightclick on item frame:
+    if player's tool is {@shard-material}:
+        cancel event
+        send colored "{@message-prefix}&cYou cannot put Strength Shards in item frames!" to player
+
+# Prevent hoppers from picking up shards
+on inventory pickup:
+    if event-item is {@shard-material}:
+        cancel event
+
+# Prevent hoppers from moving shards between inventories
+on inventory item move:
+    if event-item is {@shard-material}:
+        cancel event
+
+# Prevent crafting with shards (e.g. recovery compass)
+on craft:
+    loop items in crafting inventory of player:
+        if loop-item is {@shard-material}:
+            cancel event
+            send colored "{@message-prefix}&cYou cannot craft with Strength Shards!" to player
+            stop
+
+on preparing craft:
+    loop items in crafting inventory of player:
+        if loop-item is {@shard-material}:
+            set crafting result to air
+
 # ===== ADMIN COMMANDS =====
 command /strengthshard [<text>] [<player>] [<integer=1>]:
     aliases: /ss, /shard
