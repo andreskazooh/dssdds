@@ -71,7 +71,7 @@ options:
     # ===== MESSAGES =====
     message-prefix: &8[&d*&8] &r
     msg-shards-gained: &aYou gained &e{amount} &aStrength Shard(s)!
-    msg-shards-lost: &cYou lost &e{amount} &cStrength Shard(s)!
+    msg-shards-lost: &cYou lost all your Strength Shards!
     msg-shard-restricted: &cStrength Shards can only be obtained through PvP in danger worlds!
     msg-stats-display: &7Shards: &e{count} &7| &cDmg: &e+{damage}%% &7| &bSpd: &e+{speed}%% &7| &6Mine: &e+{mining}%%
     
@@ -378,9 +378,7 @@ on death of player:
         # Drop calculated amount of shards
         if {_drop-amount} is greater than 0:
             drop createStrengthShard({_drop-amount}) at victim
-            set {_msg} to colored "{@message-prefix}{@msg-shards-lost}"
-            replace all "{amount}" with "%{_drop-amount}%" in {_msg}
-            send {_msg} to victim
+            send colored "{@message-prefix}{@msg-shards-lost}" to victim
         
         # Handle PvP kill rewards
         if attacker is a player:
