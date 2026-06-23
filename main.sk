@@ -79,6 +79,9 @@ options:
     # Debug mode - prints info to console
     debug-mode: false
     
+    # Minimum shards to show the blue + tag above player name
+    tag-min-shards: 5
+    
     # Count shards in off-hand
     count-offhand-shards: true
 
@@ -172,11 +175,16 @@ function updatePlayerStats(p: player):
     # Display stats to player only when holding a shard in hand
     if {_count} is greater than 0:
         # Show blue + tag above player name via scoreboard team prefix
-        if {shard-tagged::%{_p}%} is not set:
-            execute console command "team add shardcarriers"
-            execute console command "team modify shardcarriers prefix {""text"":""+  "",""color"":""aqua""}"
-            execute console command "team join shardcarriers %{_p}%"
-            set {shard-tagged::%{_p}%} to true
+        if {_count} is greater than or equal to {@tag-min-shards}:
+            if {shard-tagged::%{_p}%} is not set:
+                execute console command "team add shardcarriers"
+                execute console command "team modify shardcarriers prefix {""text"":""+  "",""color"":""aqua""}"
+                execute console command "team join shardcarriers %{_p}%"
+                set {shard-tagged::%{_p}%} to true
+        else:
+            if {shard-tagged::%{_p}%} is set:
+                execute console command "team leave %{_p}%"
+                delete {shard-tagged::%{_p}%}
         set {_p}'s display name to "&b+ &r%name of {_p}%"
         set {_p}'s tab list name to "&b+ &r%name of {_p}%"
         if {_p}'s tool is {@shard-material}:
