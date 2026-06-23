@@ -84,7 +84,6 @@ options:
 
 # ===== VARIABLES =====
 # {shard-count::%player%} = current effective shard count
-# {last-shard-count::%player%} = last known count for change detection
 
 # ===== CUSTOM ITEM CREATION =====
 # Bug fix #1, #2: Use "X of material" to create an actual item stack with the correct amount
@@ -146,14 +145,6 @@ function countShardsInInventory(p: player) :: number:
 function updatePlayerStats(p: player):
     # Count current shards (works in ALL worlds)
     set {_count} to countShardsInInventory({_p})
-    
-    # Check if count changed (skip if unchanged to save performance)
-    # Note: must check "is set" first because unset variable compared to 0 returns true in Skript
-    if {last-shard-count::%{_p}%} is set:
-        if {last-shard-count::%{_p}%} is {_count}:
-            stop
-    
-    set {last-shard-count::%{_p}%} to {_count}
     set {shard-count::%{_p}%} to {_count}
     
     # Auto-refresh lore on existing shards so config changes apply immediately
@@ -223,9 +214,6 @@ every 5 ticks:
 # ===== PLAYER JOIN =====
 on join:
     wait 5 ticks
-    # Force stat recalculation by clearing cached count first
-    delete {last-shard-count::%player%}
-    delete {shard-count::%player%}
     updatePlayerStats(player)
 
 # ===== INVENTORY CHANGE DETECTION =====
@@ -356,7 +344,6 @@ on death of player:
         
         # Clear victim's shard count
         delete {shard-count::%victim%}
-        delete {last-shard-count::%victim%}
 
 # ===== PREVENT NATURAL ECHO SHARDS =====
 
@@ -482,7 +469,6 @@ command /strengthshard [<text>] [<player>] [<integer=1>]:
 # ===== PLAYER DISCONNECT CLEANUP =====
 on quit:
     delete {shard-count::%player%}
-    delete {last-shard-count::%player%}
     set player's walk speed to 0.2
     reset player's block break speed attribute
 
@@ -505,4 +491,3 @@ on script unload:
         set loop-player's walk speed to 0.2
         reset loop-player's block break speed attribute
         delete {shard-count::%loop-player%}
-        delete {last-shard-count::%loop-player%}
