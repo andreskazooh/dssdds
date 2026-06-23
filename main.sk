@@ -143,9 +143,11 @@ function updatePlayerStats(p: player):
     # Count current shards (works in ALL worlds)
     set {_count} to countShardsInInventory({_p})
     
-    # Check if count changed
-    if {last-shard-count::%{_p}%} is {_count}:
-        stop
+    # Check if count changed (skip if unchanged to save performance)
+    # Note: must check "is set" first because unset variable compared to 0 returns true in Skript
+    if {last-shard-count::%{_p}%} is set:
+        if {last-shard-count::%{_p}%} is {_count}:
+            stop
     
     set {last-shard-count::%{_p}%} to {_count}
     set {shard-count::%{_p}%} to {_count}
@@ -204,7 +206,10 @@ every 5 ticks:
 
 # ===== PLAYER JOIN =====
 on join:
-    wait 2 ticks
+    wait 5 ticks
+    # Force stat recalculation by clearing cached count first
+    delete {last-shard-count::%player%}
+    delete {shard-count::%player%}
     updatePlayerStats(player)
 
 # ===== INVENTORY CHANGE DETECTION =====
