@@ -246,13 +246,11 @@ on inventory drag:
     updatePlayerStats(player)
 
 on drop:
-    # If player drops a Strength Shard, cancel and destroy it
+    # If player drops a Strength Shard, let it drop then immediately destroy it
     if isStrengthShard(event-item) is true:
-        cancel event
-        # Remove the shard from their inventory (it's gone forever)
-        remove event-item from player's inventory
         send colored "{@message-prefix}&cYour Strength Shard was destroyed! You cannot drop shards." to player
         wait 1 tick
+        delete event-entity
         updatePlayerStats(player)
         stop
     wait 1 tick
