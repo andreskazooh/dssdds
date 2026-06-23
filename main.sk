@@ -37,6 +37,10 @@ options:
     # Movement speed bonus per shard (percentage)
     speed-per-shard: 5
     
+    # Mining speed bonus per shard (percentage)
+    # Uses the generic.block_break_speed attribute (requires MC 1.20.5+)
+    mining-speed-per-shard: 5
+    
     # Maximum number of shards that provide benefits
     max-effective-shards: 30
     
@@ -69,7 +73,7 @@ options:
     msg-shards-gained: &aYou gained &e{amount} &aStrength Shard(s)!
     msg-shards-lost: &cYou lost &e{amount} &cStrength Shard(s)!
     msg-shard-restricted: &cStrength Shards can only be obtained through PvP in danger worlds!
-    msg-stats-display: &7Shards: &e{count} &7| &cDamage: &e+{damage}%% &7| &bSpeed: &e+{speed}%%
+    msg-stats-display: &7Shards: &e{count} &7| &cDmg: &e+{damage}%% &7| &bSpd: &e+{speed}%% &7| &6Mine: &e+{mining}%%
     
     # ===== ADVANCED SETTINGS =====
     # Debug mode - prints info to console
@@ -161,13 +165,18 @@ function updatePlayerStats(p: player):
     # Calculate bonuses
     set {_damage-bonus} to {_count} * {@damage-per-shard}
     set {_speed-bonus} to {_count} * {@speed-per-shard}
+    set {_mining-bonus} to {_count} * {@mining-speed-per-shard}
     
     # Apply speed bonus (base speed is 0.2, 1% = 0.002)
     set {_new-speed} to 0.2 + ({_speed-bonus} * 0.002)
     set {_p}'s walk speed to {_new-speed}
     
+    # Apply mining speed bonus (base block_break_speed is 1.0, 1% = 0.01)
+    set {_new-mining} to 1.0 + ({_mining-bonus} * 0.01)
+    set {_p}'s block break speed attribute to {_new-mining}
+    
     if {@debug-mode} is true:
-        send "[DEBUG] Updated stats for %{_p}%: %{_count}% shards, +%{_damage-bonus}%%% damage, +%{_speed-bonus}%%% speed" to console
+        send "[DEBUG] Updated stats for %{_p}%: %{_count}% shards, +%{_damage-bonus}%%% damage, +%{_speed-bonus}%%% speed, +%{_mining-bonus}%%% mining" to console
     
     # Display stats to player
     if {_count} is greater than 0:
@@ -175,6 +184,7 @@ function updatePlayerStats(p: player):
         replace all "{count}" with "%{_count}%" in {_msg}
         replace all "{damage}" with "%{_damage-bonus}%" in {_msg}
         replace all "{speed}" with "%{_speed-bonus}%" in {_msg}
+        replace all "{mining}" with "%{_mining-bonus}%" in {_msg}
         send action bar {_msg} to {_p}
 
 # ===== SHARD REMOVAL HELPER =====
@@ -236,6 +246,15 @@ on inventory drag:
     updatePlayerStats(player)
 
 on drop:
+    # If player drops a Strength Shard, cancel and destroy it
+    if isStrengthShard(event-item) is true:
+        cancel event
+        # Remove the shard from their inventory (it's gone forever)
+        remove event-item from player's inventory
+        send colored "{@message-prefix}&cYour Strength Shard was destroyed! You cannot drop shards." to player
+        wait 1 tick
+        updatePlayerStats(player)
+        stop
     wait 1 tick
     updatePlayerStats(player)
 
@@ -427,6 +446,7 @@ on quit:
     delete {shard-count::%player%}
     delete {last-shard-count::%player%}
     set player's walk speed to 0.2
+    reset player's block break speed attribute
 
 # ===== SCRIPT LOAD MESSAGE =====
 # Bug fix #13: Use plain strings for console (no "colored" wrapper needed for console)
@@ -442,8 +462,9 @@ on script load:
 
 on script unload:
     send "&8[&d*&8] &dStrength Shard System &7v1.2.0 &cUNLOADED" to console
-    # Reset all players' speeds
+    # Reset all players' speeds and attributes
     loop all players:
         set loop-player's walk speed to 0.2
+        reset loop-player's block break speed attribute
         delete {shard-count::%loop-player%}
         delete {last-shard-count::%loop-player%}
