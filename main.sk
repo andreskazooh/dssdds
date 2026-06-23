@@ -264,19 +264,23 @@ every 5 ticks:
 
 # ===== SHARD DECAY =====
 # Slowly removes shards from players above the decay threshold
+# Only decays in safe worlds - shards don't decay in danger worlds
 every 1 second:
     if {@decay-threshold} is greater than 0:
         loop all players:
-            set {_count} to countShardsInInventory(loop-player)
-            if {_count} is greater than {@decay-threshold}:
-                # Check if enough time has passed for decay
-                if {decay-timer::%loop-player%} is not set:
-                    set {decay-timer::%loop-player%} to 0
-                add 1 to {decay-timer::%loop-player%}
-                if {decay-timer::%loop-player%} is greater than or equal to {@decay-interval}:
-                    set {decay-timer::%loop-player%} to 0
-                    removeShardsFromPlayer(loop-player, 1)
-                    send colored "{@message-prefix}&eA Strength Shard has decayed from your inventory..." to loop-player
+            if isDangerWorld(loop-player's world) is false:
+                set {_count} to countShardsInInventory(loop-player)
+                if {_count} is greater than {@decay-threshold}:
+                    # Check if enough time has passed for decay
+                    if {decay-timer::%loop-player%} is not set:
+                        set {decay-timer::%loop-player%} to 0
+                    add 1 to {decay-timer::%loop-player%}
+                    if {decay-timer::%loop-player%} is greater than or equal to {@decay-interval}:
+                        set {decay-timer::%loop-player%} to 0
+                        removeShardsFromPlayer(loop-player, 1)
+                        send colored "{@message-prefix}&eA Strength Shard has decayed from your inventory..." to loop-player
+                else:
+                    delete {decay-timer::%loop-player%}
             else:
                 delete {decay-timer::%loop-player%}
 
