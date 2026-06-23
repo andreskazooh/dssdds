@@ -169,14 +169,22 @@ function updatePlayerStats(p: player):
     if {@debug-mode} is true:
         send "[DEBUG] Updated stats for %{_p}%: %{_count}% shards, +%{_damage-bonus}%%% damage, +%{_speed-bonus}%%% speed, +%{_mining-bonus}%%% mining" to console
     
-    # Display stats to player
+    # Display stats to player only when holding a shard in hand
     if {_count} is greater than 0:
-        set {_msg} to colored "{@message-prefix}{@msg-stats-display}"
-        replace all "{count}" with "%{_count}%" in {_msg}
-        replace all "{damage}" with "%{_damage-bonus}%" in {_msg}
-        replace all "{speed}" with "%{_speed-bonus}%" in {_msg}
-        replace all "{mining}" with "%{_mining-bonus}%" in {_msg}
-        send action bar {_msg} to {_p}
+        if {_p}'s tool is {@shard-material}:
+            set {_msg} to colored "{@message-prefix}{@msg-stats-display}"
+            replace all "{count}" with "%{_count}%" in {_msg}
+            replace all "{damage}" with "%{_damage-bonus}%" in {_msg}
+            replace all "{speed}" with "%{_speed-bonus}%" in {_msg}
+            replace all "{mining}" with "%{_mining-bonus}%" in {_msg}
+            send action bar {_msg} to {_p}
+        else if {_p}'s off hand tool is {@shard-material}:
+            set {_msg} to colored "{@message-prefix}{@msg-stats-display}"
+            replace all "{count}" with "%{_count}%" in {_msg}
+            replace all "{damage}" with "%{_damage-bonus}%" in {_msg}
+            replace all "{speed}" with "%{_speed-bonus}%" in {_msg}
+            replace all "{mining}" with "%{_mining-bonus}%" in {_msg}
+            send action bar {_msg} to {_p}
 
 # ===== SHARD REMOVAL HELPER =====
 # Bug fix #11, #12: Use "is less than" / "is greater than" instead of < / >
