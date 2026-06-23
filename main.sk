@@ -25,7 +25,7 @@ options:
     shard-name: &d&lStrength Shard
     
     # Lore for the Strength Shard (use | to separate lines)
-    shard-lore: &7Each shard in your inventory grants:|&e+5%% Damage|&e+5%% Movement Speed|&c Can only be found in a the non keep-inventory world|&7Maximum: 30 shards
+    shard-lore: &7Each shard in your inventory grants:|&e+5%% Damage|&e+5%% Movement Speed|&e+5%% Mining Speed|&c Can only be found by killing in a no keep-inv world|&7Maximum: 15 shards
     
     # Custom model data for the shard (set to 0 to disable)
     shard-custom-model-data: 0
@@ -42,7 +42,7 @@ options:
     mining-speed-per-shard: 5
     
     # Maximum number of shards that provide benefits
-    max-effective-shards: 30
+    max-effective-shards: 15
     
     # ===== PVP KILL REWARDS =====
     # Min shards gained on kill
@@ -59,7 +59,7 @@ options:
     drop-all-shards-on-death: false
     
     # If drop-all-shards-on-death is false, percentage to drop (0-100)
-    percent-shards-dropped: 75
+    percent-shards-dropped: 60
     
     # ===== ITEM RESTRICTIONS =====
     # Prevent Echo Shards from spawning naturally
