@@ -187,12 +187,14 @@ function updatePlayerStats(p: player):
     set {_mining-bonus} to {_count} * {@mining-speed-per-shard}
     
     # Apply speed bonus (base speed is 0.2, 1% = 0.002)
-    set {_new-speed} to 0.2 + ({_speed-bonus} * 0.002)
-    set {_p}'s walk speed to {_new-speed}
+    if {shard-toggle-speed::%{_p}%} is not "&cOFF":
+        set {_new-speed} to 0.2 + ({_speed-bonus} * 0.002)
+        set {_p}'s walk speed to {_new-speed}
     
     # Apply mining speed bonus (base block_break_speed is 1.0, 1% = 0.01)
-    set {_new-mining} to 1.0 + ({_mining-bonus} * 0.01)
-    set {_p}'s block break speed attribute to {_new-mining}
+    if {shard-toggle-mining::%{_p}%} is not "&cOFF":
+        set {_new-mining} to 1.0 + ({_mining-bonus} * 0.01)
+        set {_p}'s block break speed attribute to {_new-mining}
     
     if {@debug-mode} is true:
         send "[DEBUG] Updated stats for %{_p}%: %{_count}% shards, +%{_damage-bonus}%%% damage, +%{_speed-bonus}%%% speed, +%{_mining-bonus}%%% mining" to console
@@ -255,15 +257,16 @@ function removeShardsFromPlayer(p: player, amount: number) :: number:
 # Apply damage bonus when player attacks (works in ALL worlds)
 on damage:
     if attacker is a player:
-        if {shard-count::%attacker%} is set:
-            set {_count} to {shard-count::%attacker%}
-            if {_count} is greater than 0:
-                set {_bonus} to {_count} * {@damage-per-shard}
-                set {_multiplier} to 1 + ({_bonus} / 100)
-                set damage to damage * {_multiplier}
-                
-                if {@debug-mode} is true:
-                    send "[DEBUG] %attacker% dealt damage with +%{_bonus}%%% bonus" to console
+        if {shard-toggle-damage::%attacker%} is not "&cOFF":
+            if {shard-count::%attacker%} is set:
+                set {_count} to {shard-count::%attacker%}
+                if {_count} is greater than 0:
+                    set {_bonus} to {_count} * {@damage-per-shard}
+                    set {_multiplier} to 1 + ({_bonus} / 100)
+                    set damage to damage * {_multiplier}
+                    
+                    if {@debug-mode} is true:
+                        send "[DEBUG] %attacker% dealt damage with +%{_bonus}%%% bonus" to console
 
 # ===== PERIODIC STAT UPDATE =====
 every 5 ticks:
@@ -541,6 +544,61 @@ command /strengthshard [<text>] [<player>] [<integer=1>]:
         
         else:
             send colored "{@message-prefix}&cUnknown subcommand. Use &f/ss &cfor help."
+
+# ===== PLAYER SHARD TOGGLE COMMAND =====
+command /shardtoggle [<text>]:
+    aliases: /st
+    trigger:
+        if arg-1 is not set:
+            send colored "{@message-prefix}&eStrength Shard Toggles:"
+            send colored "&7/st speed &f- Toggle speed boost (%{shard-toggle-speed::%player%} otherwise ""&aON""% &7)"
+            send colored "&7/st damage &f- Toggle damage boost (%{shard-toggle-damage::%player%} otherwise ""&aON""% &7)"
+            send colored "&7/st mining &f- Toggle mining speed (%{shard-toggle-mining::%player%} otherwise ""&aON""% &7)"
+            send colored "&7/st all &f- Toggle all effects"
+            stop
+        
+        if arg-1 is "speed":
+            if {shard-toggle-speed::%player%} is "&cOFF":
+                delete {shard-toggle-speed::%player%}
+                send colored "{@message-prefix}&aSpeed boost &eENABLED"
+            else:
+                set {shard-toggle-speed::%player%} to "&cOFF"
+                set player's walk speed to 0.2
+                send colored "{@message-prefix}&cSpeed boost &eDISABLED"
+        
+        else if arg-1 is "damage":
+            if {shard-toggle-damage::%player%} is "&cOFF":
+                delete {shard-toggle-damage::%player%}
+                send colored "{@message-prefix}&aDamage boost &eENABLED"
+            else:
+                set {shard-toggle-damage::%player%} to "&cOFF"
+                send colored "{@message-prefix}&cDamage boost &eDISABLED"
+        
+        else if arg-1 is "mining":
+            if {shard-toggle-mining::%player%} is "&cOFF":
+                delete {shard-toggle-mining::%player%}
+                send colored "{@message-prefix}&aMining speed boost &eENABLED"
+            else:
+                set {shard-toggle-mining::%player%} to "&cOFF"
+                reset player's block break speed attribute
+                send colored "{@message-prefix}&cMining speed boost &eDISABLED"
+        
+        else if arg-1 is "all":
+            if {shard-toggle-speed::%player%} is "&cOFF":
+                delete {shard-toggle-speed::%player%}
+                delete {shard-toggle-damage::%player%}
+                delete {shard-toggle-mining::%player%}
+                send colored "{@message-prefix}&aAll shard effects &eENABLED"
+            else:
+                set {shard-toggle-speed::%player%} to "&cOFF"
+                set {shard-toggle-damage::%player%} to "&cOFF"
+                set {shard-toggle-mining::%player%} to "&cOFF"
+                set player's walk speed to 0.2
+                reset player's block break speed attribute
+                send colored "{@message-prefix}&cAll shard effects &eDISABLED"
+        
+        else:
+            send colored "{@message-prefix}&cUnknown option. Use &f/st &cfor help."
 
 # ===== PLAYER DISCONNECT CLEANUP =====
 on quit:
