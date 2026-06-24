@@ -186,10 +186,11 @@ function updatePlayerStats(p: player):
     set {_speed-bonus} to {_count} * {@speed-per-shard}
     set {_mining-bonus} to {_count} * {@mining-speed-per-shard}
     
-    # Apply speed bonus (base speed is 0.2, 1% = 0.002)
+    # Apply speed bonus using movement speed attribute (affects all movement: walking, jumping, ice, etc.)
+    # Base movement_speed attribute is 0.1, 1% = 0.001
     if {shard-toggle-speed::%{_p}%} is not "&cOFF":
-        set {_new-speed} to 0.2 + ({_speed-bonus} * 0.002)
-        set {_p}'s walk speed to {_new-speed}
+        set {_new-speed} to 0.1 + ({_speed-bonus} * 0.001)
+        set {_p}'s movement speed attribute to {_new-speed}
     
     # Apply mining speed bonus (base block_break_speed is 1.0, 1% = 0.01)
     if {shard-toggle-mining::%{_p}%} is not "&cOFF":
@@ -530,7 +531,7 @@ command /strengthshard [<text>] [<player>] [<integer=1>]:
                     if isStrengthShard(loop-item) is true:
                         add item amount of loop-item to {_total}
                         set loop-item to air
-                set loop-player's walk speed to 0.2
+                reset loop-player's movement speed attribute
                 reset loop-player's block break speed attribute
                 delete {shard-count::%loop-player%}
                 if {shard-tagged::%loop-player%} is set:
@@ -573,7 +574,7 @@ command /shardtoggle [<text>]:
                 send colored "{@message-prefix}&aSpeed boost &eENABLED"
             else:
                 set {shard-toggle-speed::%player%} to "&cOFF"
-                set player's walk speed to 0.2
+                reset player's movement speed attribute
                 send colored "{@message-prefix}&cSpeed boost &eDISABLED"
         
         else if arg-1 is "damage":
@@ -603,7 +604,7 @@ command /shardtoggle [<text>]:
                 set {shard-toggle-speed::%player%} to "&cOFF"
                 set {shard-toggle-damage::%player%} to "&cOFF"
                 set {shard-toggle-mining::%player%} to "&cOFF"
-                set player's walk speed to 0.2
+                reset player's movement speed attribute
                 reset player's block break speed attribute
                 send colored "{@message-prefix}&cAll shard effects &eDISABLED"
         
@@ -613,7 +614,7 @@ command /shardtoggle [<text>]:
 # ===== PLAYER DISCONNECT CLEANUP =====
 on quit:
     delete {shard-count::%player%}
-    set player's walk speed to 0.2
+    reset player's movement speed attribute
     reset player's block break speed attribute
     # Remove team tag
     if {shard-tagged::%player%} is set:
@@ -639,7 +640,7 @@ on script unload:
     send "&8[&d*&8] &dStrength Shard System &7v1.2.0 &cUNLOADED" to console
     # Reset all players' speeds and attributes
     loop all players:
-        set loop-player's walk speed to 0.2
+        reset loop-player's movement speed attribute
         reset loop-player's block break speed attribute
         delete {shard-count::%loop-player%}
         if {shard-tagged::%loop-player%} is set:
