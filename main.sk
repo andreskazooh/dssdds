@@ -408,13 +408,14 @@ on death of player:
             else:
                 set {_reward} to random integer between {_min} and {_max}
             
-            # Give reward to killer
-            set {_shard-item} to createStrengthShard({_reward})
-            give {_shard-item} to attacker
-            
-            set {_msg} to colored "{@message-prefix}{@msg-shards-gained}"
-            replace all "{amount}" with "%{_reward}%" in {_msg}
-            send {_msg} to attacker
+            # Only give reward if greater than 0
+            if {_reward} is greater than 0:
+                set {_shard-item} to createStrengthShard({_reward})
+                give {_shard-item} to attacker
+                
+                set {_msg} to colored "{@message-prefix}{@msg-shards-gained}"
+                replace all "{amount}" with "%{_reward}%" in {_msg}
+                send {_msg} to attacker
             
             # Notify about victim's dropped shards
             if {@killer-gets-victim-shards} is true:
@@ -530,7 +531,13 @@ command /strengthshard [<text>] [<player>] [<integer=1>]:
                         add item amount of loop-item to {_total}
                         set loop-item to air
                 set loop-player's walk speed to 0.2
+                reset loop-player's block break speed attribute
                 delete {shard-count::%loop-player%}
+                if {shard-tagged::%loop-player%} is set:
+                    execute console command "team leave %loop-player%"
+                    delete {shard-tagged::%loop-player%}
+                set loop-player's display name to name of loop-player
+                set loop-player's tab list name to name of loop-player
             send colored "{@message-prefix}&aRemoved &e%{_total}% &aStrength Shard(s) from all online players." to sender
             send colored "{@message-prefix}&7Note: Shards in unloaded chunks or offline players cannot be removed." to sender
         
@@ -608,6 +615,13 @@ on quit:
     delete {shard-count::%player%}
     set player's walk speed to 0.2
     reset player's block break speed attribute
+    # Remove team tag
+    if {shard-tagged::%player%} is set:
+        execute console command "team leave %player%"
+        delete {shard-tagged::%player%}
+    # Reset display/tab names
+    set player's display name to name of player
+    set player's tab list name to name of player
 
 # ===== SCRIPT LOAD MESSAGE =====
 # Bug fix #13: Use plain strings for console (no "colored" wrapper needed for console)
@@ -628,3 +642,8 @@ on script unload:
         set loop-player's walk speed to 0.2
         reset loop-player's block break speed attribute
         delete {shard-count::%loop-player%}
+        if {shard-tagged::%loop-player%} is set:
+            execute console command "team leave %loop-player%"
+            delete {shard-tagged::%loop-player%}
+        set loop-player's display name to name of loop-player
+        set loop-player's tab list name to name of loop-player
