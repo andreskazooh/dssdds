@@ -95,19 +95,20 @@ function getEnchantLevel(item: item, enchantName: text) :: number:
 
 # Check if held item is a valid target for the given enchant type
 function isValidEnchantTarget(item: item, enchantType: text) :: boolean:
+    set {_type-name} to "%type of {_item}%"
     if {_enchantType} is "damage":
-        if type of {_item} contains "sword":
+        if {_type-name} contains "sword":
             return true
-        if type of {_item} contains "axe":
-            if type of {_item} does not contain "pickaxe":
+        if {_type-name} contains "axe":
+            if {_type-name} does not contain "pickaxe":
                 return true
     else if {_enchantType} is "speed":
-        if type of {_item} contains "boots":
+        if {_type-name} contains "boots":
             return true
     else if {_enchantType} is "mining":
-        if type of {_item} contains "pickaxe":
+        if {_type-name} contains "pickaxe":
             return true
-        if type of {_item} contains "shovel":
+        if {_type-name} contains "shovel":
             return true
     return false
 
@@ -182,9 +183,7 @@ function applyShardEnchant(p: player, enchantType: text, shardsToSpend: number):
         # Remove the old enchant lore line
         clear {_new-lore::*}
         loop {_old-lore::*}:
-            if loop-value contains {_enchantName}:
-                continue
-            else:
+            if loop-value does not contain {_enchantName}:
                 add loop-value to {_new-lore::*}
     
     # Add the new enchant lore line
@@ -218,7 +217,10 @@ command /shardenchant [<text>] [<integer>]:
             stop
         
         if arg-1 is "damage":
-            set {_shards} to arg-2 if arg-2 is set else {@shards-per-level}
+            if arg-2 is set:
+                set {_shards} to arg-2
+            else:
+                set {_shards} to {@shards-per-level}
             # Validate shard amount
             if {_shards} is not {@shards-per-level}:
                 if {_shards} is not {@shards-per-level} * 2:
@@ -228,7 +230,10 @@ command /shardenchant [<text>] [<integer>]:
             applyShardEnchant(player, "damage", {_shards})
         
         else if arg-1 is "speed":
-            set {_shards} to arg-2 if arg-2 is set else {@shards-per-level}
+            if arg-2 is set:
+                set {_shards} to arg-2
+            else:
+                set {_shards} to {@shards-per-level}
             if {_shards} is not {@shards-per-level}:
                 if {_shards} is not {@shards-per-level} * 2:
                     if {_shards} is not {@shards-per-level} * 3:
@@ -237,7 +242,10 @@ command /shardenchant [<text>] [<integer>]:
             applyShardEnchant(player, "speed", {_shards})
         
         else if arg-1 is "mining":
-            set {_shards} to arg-2 if arg-2 is set else {@shards-per-level}
+            if arg-2 is set:
+                set {_shards} to arg-2
+            else:
+                set {_shards} to {@shards-per-level}
             if {_shards} is not {@shards-per-level}:
                 if {_shards} is not {@shards-per-level} * 2:
                     if {_shards} is not {@shards-per-level} * 3:
@@ -290,9 +298,7 @@ on damage:
 every 5 ticks:
     loop all players:
         # Check boots for Shard Speed
-        set {_boots} to loop-player's leggings slot
-        # Actually we need boots slot - use chestplate/leggings/boots naming
-        set {_boots} to loop-player's boots
+        set {_boots} to boots of loop-player
         if {_boots} is not air:
             set {_level} to getEnchantLevel({_boots}, "Shard Speed")
             if {_level} is greater than 0:
