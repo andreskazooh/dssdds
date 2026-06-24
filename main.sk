@@ -550,10 +550,13 @@ command /shardtoggle [<text>]:
     aliases: /st
     trigger:
         if arg-1 is not set:
+            set {_speed-status} to "&aON" if {shard-toggle-speed::%player%} is not set else "&cOFF"
+            set {_damage-status} to "&aON" if {shard-toggle-damage::%player%} is not set else "&cOFF"
+            set {_mining-status} to "&aON" if {shard-toggle-mining::%player%} is not set else "&cOFF"
             send colored "{@message-prefix}&eStrength Shard Toggles:"
-            send colored "&7/st speed &f- Toggle speed boost (%{shard-toggle-speed::%player%} otherwise ""&aON""% &7)"
-            send colored "&7/st damage &f- Toggle damage boost (%{shard-toggle-damage::%player%} otherwise ""&aON""% &7)"
-            send colored "&7/st mining &f- Toggle mining speed (%{shard-toggle-mining::%player%} otherwise ""&aON""% &7)"
+            send colored "&7/st speed &f- Toggle speed boost (%{_speed-status}%&7)"
+            send colored "&7/st damage &f- Toggle damage boost (%{_damage-status}%&7)"
+            send colored "&7/st mining &f- Toggle mining speed (%{_mining-status}%&7)"
             send colored "&7/st all &f- Toggle all effects"
             stop
         
