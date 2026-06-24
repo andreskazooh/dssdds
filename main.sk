@@ -413,6 +413,9 @@ on death of player:
             if {_reward} is greater than 0:
                 set {_shard-item} to createStrengthShard({_reward})
                 give {_shard-item} to attacker
+                # Drop at feet if inventory was full
+                if attacker does not have {_shard-item}:
+                    drop {_shard-item} at attacker
                 
                 set {_msg} to colored "{@message-prefix}{@msg-shards-gained}"
                 replace all "{amount}" with "%{_reward}%" in {_msg}
@@ -496,6 +499,9 @@ command /strengthshard [<text>] [<player>] [<integer=1>]:
             set {_shard} to createStrengthShard({_amount})
             
             give {_shard} to arg-2
+            # Drop at feet if inventory was full
+            if arg-2 does not have {_shard}:
+                drop {_shard} at arg-2
             send colored "{@message-prefix}&aGave &e%{_amount}% &aStrength Shard(s) to &e%arg-2%&a!" to sender
             set {_msg} to colored "{@message-prefix}{@msg-shards-gained}"
             replace all "{amount}" with "%{_amount}%" in {_msg}
