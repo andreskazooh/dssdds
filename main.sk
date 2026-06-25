@@ -301,9 +301,6 @@ on join:
     updatePlayerStats(player)
 
 # ===== INVENTORY CHANGE DETECTION =====
-on inventory click:
-    wait 1 tick
-    updatePlayerStats(player)
 
 # Block shift-clicking shards (prevents transfer into containers)
 on inventory click at echo shard:
@@ -315,6 +312,19 @@ on inventory click at echo shard:
         cancel event
         send colored "{@message-prefix}&cYou cannot shift-click Strength Shards!" to player
         stop
+
+# Block placing shards into containers via regular click (cursor holding shard, clicking container slot)
+on inventory click:
+    if event-inventory is not player's inventory:
+        # Player has a container open - check if they're trying to place a shard
+        if cursor slot of player is {@shard-material}:
+            # Check if clicking in the container (top) inventory, not the player section
+            if clicked inventory is not player's inventory:
+                cancel event
+                send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
+                stop
+    wait 1 tick
+    updatePlayerStats(player)
 
 on inventory close:
     wait 1 tick
