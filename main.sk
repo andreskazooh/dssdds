@@ -304,13 +304,14 @@ on join:
 # ===== INVENTORY CHANGE DETECTION =====
 on inventory click:
     # Prevent putting shards into other inventories (chests, shulkers, etc.)
-    if player's current inventory is not player's inventory:
+    # Only triggers when a non-player inventory (container) is open
+    if event-inventory is not player's inventory:
         # Block if the clicked item is a shard
         if event-item is {@shard-material}:
             cancel event
             send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
             stop
-        # Block if player has shard on cursor (check item type of cursor)
+        # Block if player has shard on cursor
         set {_cursor} to cursor slot of player
         if {_cursor} is {@shard-material}:
             cancel event
