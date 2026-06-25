@@ -303,20 +303,18 @@ on join:
 
 # ===== INVENTORY CHANGE DETECTION =====
 on inventory click:
-    # Prevent putting shards into other inventories (chests, shulkers, etc.)
-    # But ALLOW taking shards out of containers
+    # After the click resolves, check if shards ended up in the container
     if event-inventory is not player's inventory:
-        # Block placing shards from cursor into container
-        if cursor slot of player is {@shard-material}:
-            cancel event
-            send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
-            stop
-        # Block shift-clicking shards from player inventory into container
-        if event-item is {@shard-material}:
-            if inventory action is move to other inventory:
-                cancel event
-                send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
-                stop
+        wait 1 tick
+        # Check if any shards are now in the container - if so, move them back
+        loop 54 times:
+            set {_slot} to slot (loop-number - 1) of event-inventory
+            if {_slot} is set:
+                if {_slot} is {@shard-material}:
+                    # Move shard back to player
+                    give {_slot} to player
+                    set slot (loop-number - 1) of event-inventory to air
+                    send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
     wait 1 tick
     updatePlayerStats(player)
 
