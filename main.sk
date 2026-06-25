@@ -314,14 +314,21 @@ on inventory click:
     wait 1 tick
     updatePlayerStats(player)
 
-# Separate handler: block clicking on echo shards when any container is open
-on inventory click at echo shard:
-    send "DEBUG: echo shard click detected, event-inventory: %event-inventory%" to player
-    cancel event
+# Track when a container is open using inventory open/close events
+on inventory open:
+    if event-inventory is not player's inventory:
+        set {container-open::%player%} to true
 
 on inventory close:
+    delete {container-open::%player%}
     wait 1 tick
     updatePlayerStats(player)
+
+# Separate handler: block clicking on shards when a container is tracked as open
+on inventory click at echo shard:
+    if {container-open::%player%} is true:
+        cancel event
+        send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
 
 on swap hand items:
     wait 1 tick
