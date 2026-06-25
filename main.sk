@@ -304,14 +304,7 @@ on join:
 # ===== INVENTORY CHANGE DETECTION =====
 on inventory click:
     # Prevent putting shards into other inventories (chests, shulkers, etc.)
-    # Uses both event-inventory and top inventory check to catch all cases
-    # including shulker boxes opened from player inventory
-    set {_block} to false
     if event-inventory is not player's inventory:
-        set {_block} to true
-    if player's top inventory is not player's inventory:
-        set {_block} to true
-    if {_block} is true:
         # Block if the clicked item is a shard
         if event-item is {@shard-material}:
             cancel event
@@ -327,6 +320,15 @@ on inventory click:
     updatePlayerStats(player)
 
 on inventory close:
+    # Failsafe: if any shards ended up in a container, yank them back
+    if event-inventory is not player's inventory:
+        loop 54 times:
+            set {_slot} to slot (loop-number - 1) of event-inventory
+            if {_slot} is set:
+                if {_slot} is {@shard-material}:
+                    set slot (loop-number - 1) of event-inventory to air
+                    give {_slot} to player
+                    send colored "{@message-prefix}&cStrength Shards cannot be stored in containers! Returned to your inventory." to player
     wait 1 tick
     updatePlayerStats(player)
 
