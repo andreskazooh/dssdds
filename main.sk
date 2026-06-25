@@ -238,7 +238,6 @@ function updatePlayerStats(p: player):
             delete {shard-tagged::%{_p}%}
         set {_p}'s display name to name of {_p}
         set {_p}'s tab list name to name of {_p}
-        reset {_p}'s custom name
 
 # ===== SHARD REMOVAL HELPER =====
 # Bug fix #11, #12: Use "is less than" / "is greater than" instead of < / >
@@ -308,9 +307,14 @@ on inventory click:
 
 # Block shift-clicking shards (prevents transfer into containers)
 on inventory click at echo shard:
-    if click type is shift left or click type is shift right:
+    if click type is left mouse button with shift:
         cancel event
         send colored "{@message-prefix}&cYou cannot shift-click Strength Shards!" to player
+        stop
+    if click type is right mouse button with shift:
+        cancel event
+        send colored "{@message-prefix}&cYou cannot shift-click Strength Shards!" to player
+        stop
 
 on inventory close:
     wait 1 tick
