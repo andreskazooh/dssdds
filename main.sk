@@ -306,21 +306,17 @@ on inventory click:
     # Prevent putting shards into other inventories (chests, shulkers, etc.)
     # But ALLOW taking shards out of containers
     if event-inventory is not player's inventory:
-        # Block placing shards from cursor into container slots
+        # Block placing shards from cursor into container
         if cursor slot of player is {@shard-material}:
-            # Only block if clicking on a container slot (not the player's own slots in the view)
-            if clicked inventory is not player's inventory:
+            cancel event
+            send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
+            stop
+        # Block shift-clicking shards from player inventory into container
+        if event-item is {@shard-material}:
+            if inventory action is move to other inventory:
                 cancel event
                 send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
                 stop
-    # Block shift-clicking shards from player inventory INTO a container
-    if clicked inventory is player's inventory:
-        if event-inventory is not player's inventory:
-            if event-item is {@shard-material}:
-                if click type is shift left or click type is shift right:
-                    cancel event
-                    send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
-                    stop
     wait 1 tick
     updatePlayerStats(player)
 
