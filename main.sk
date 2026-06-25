@@ -324,8 +324,9 @@ on inventory close:
     wait 1 tick
     updatePlayerStats(player)
 
-# Separate handler: block clicking on shards when a container is tracked as open
+# Separate handler: block shard clicks when a container is open OR shift-clicking
 on inventory click at echo shard:
+    # Block if container is tracked as open
     if {container-open::%player%} is true:
         cancel event
         send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
