@@ -311,14 +311,14 @@ on inventory click:
             cancel event
             send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
             stop
-        # Block shift-clicking shards into container
-        if event-item is {@shard-material}:
-            if inventory action is move to other inventory:
-                cancel event
-                send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
-                stop
     wait 1 tick
     updatePlayerStats(player)
+
+# Separate handler: block clicking on echo shards when any container is open
+on inventory click at echo shard:
+    if event-inventory is not player's inventory:
+        cancel event
+        send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
 
 on inventory close:
     wait 1 tick
