@@ -316,9 +316,8 @@ on inventory click:
 
 # Separate handler: block clicking on echo shards when any container is open
 on inventory click at echo shard:
-    if event-inventory is not player's inventory:
-        cancel event
-        send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
+    send "DEBUG: echo shard click detected, event-inventory: %event-inventory%" to player
+    cancel event
 
 on inventory close:
     wait 1 tick
