@@ -304,8 +304,14 @@ on join:
 # ===== INVENTORY CHANGE DETECTION =====
 on inventory click:
     # Prevent putting shards into other inventories (chests, shulkers, etc.)
-    # Only triggers when a non-player inventory (container) is open
+    # Uses both event-inventory and top inventory check to catch all cases
+    # including shulker boxes opened from player inventory
+    set {_block} to false
     if event-inventory is not player's inventory:
+        set {_block} to true
+    if player's top inventory is not player's inventory:
+        set {_block} to true
+    if {_block} is true:
         # Block if the clicked item is a shard
         if event-item is {@shard-material}:
             cancel event
