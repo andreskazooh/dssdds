@@ -1,0 +1,641 @@
+# ========================================
+# STRENGTH SHARD SYSTEM (GLOBAL)
+# ========================================
+# Version: 1.2.0-global
+# Compatible with Skript 2.15.3 and SkBee 3.25
+# 
+# A PvP-focused progression system where players gain power by holding
+# Strength Shards in their inventory. Shards can be obtained through
+# PvP in ANY world. No danger/safe world distinction.
+# ========================================
+
+# ===== CONFIGURATION =====
+# All options are inline to avoid cross-file option loading issues.
+options:
+    # ===== STRENGTH SHARD PROPERTIES =====
+    # The base material for Strength Shards
+    shard-material: echo shard
+    
+    # Display name for the Strength Shard item
+    shard-name: &d&lStrength Shard
+    
+    # Lore for the Strength Shard (use | to separate lines)
+    shard-lore: &7Each shard in your inventory grants:|&e+5%% Damage|&e+5%% Movement Speed|&e+5%% Mining Speed|&c Can only be found by killing players|&7Maximum: 15 shards
+    
+    # Custom model data for the shard (set to 0 to disable)
+    shard-custom-model-data: 0
+    
+    # ===== PROGRESSION STATS =====
+    # Damage bonus per shard (percentage)
+    damage-per-shard: 5
+    
+    # Movement speed bonus per shard (percentage)
+    speed-per-shard: 5
+    
+    # Mining speed bonus per shard (percentage)
+    # Uses the generic.block_break_speed attribute (requires MC 1.20.5+)
+    mining-speed-per-shard: 5
+    
+    # Maximum number of shards that provide benefits
+    max-effective-shards: 15
+    
+    # ===== PVP KILL REWARDS =====
+    # Min shards gained on kill
+    min-shards-on-kill: 0
+    
+    # Max shards gained on kill
+    max-shards-on-kill: 1
+    
+    # Whether killer also gets victim's dropped shards info
+    killer-gets-victim-shards: true
+    
+    # ===== DEATH PENALTIES =====
+    # Whether players drop ALL shards on death
+    drop-all-shards-on-death: false
+    
+    # If drop-all-shards-on-death is false, percentage to drop (0-100)
+    percent-shards-dropped: 60
+    
+    # ===== ITEM RESTRICTIONS =====
+    # Prevent Echo Shards from spawning naturally
+    prevent-natural-echo-shards: true
+    
+    # Block placing Echo Shards
+    prevent-shard-placement: true
+    
+    # ===== MESSAGES =====
+    message-prefix: &8[&d*&8] &r
+    msg-shards-gained: &aYou gained &e{amount} &aStrength Shard(s)!
+    msg-shards-lost: &cYou lost all your Strength Shards!
+    msg-shard-restricted: &cStrength Shards can only be obtained through PvP!
+    msg-stats-display: &7Shards: &e{count} &7| &cDmg: &e+{damage}%% &7| &bSpd: &e+{speed}%% &7| &6Mine: &e+{mining}%%
+    
+    # ===== ADVANCED SETTINGS =====
+    # Debug mode - prints info to console
+    debug-mode: false
+    
+    # Minimum shards to show the blue + tag above player name
+    tag-min-shards: 10
+    
+    # Shard decay - slowly lose shards when above this threshold
+    # Set to 0 to disable decay
+    decay-threshold: 10
+    
+    # How often a shard is removed (in seconds) when above decay threshold
+    decay-interval: 60
+    
+    # Maximum shards a player can physically hold in their inventory
+    # Any shards above this are automatically removed
+    max-shards-in-inventory: 15
+    
+    # Count shards in off-hand
+    count-offhand-shards: true
+
+# ===== VARIABLES =====
+# {shard-count::%player%} = current effective shard count
+
+# ===== CUSTOM ITEM CREATION =====
+# Bug fix #1, #2: Use "X of material" to create an actual item stack with the correct amount
+# Bug fix #5: Replaced "all item flags" with specific valid flag names
+function createStrengthShard(amt: number = 1) :: item:
+    set {_shard} to {_amt} of {@shard-material}
+    set the name of {_shard} to colored "{@shard-name}"
+    
+    # Parse lore lines
+    set {_lore-raw} to "{@shard-lore}"
+    set {_lore::*} to split {_lore-raw} at "|"
+    loop {_lore::*}:
+        set {_colored-lore::%loop-index%} to colored loop-value
+    set lore of {_shard} to {_colored-lore::*}
+    
+    # Add custom model data if specified
+    if {@shard-custom-model-data} is greater than 0:
+        set custom model data of {_shard} to {@shard-custom-model-data}
+    
+    # Hide enchant and attribute flags for cleaner look
+    set item flags of {_shard} to hide enchants, hide attributes, and hide additional tooltip
+    
+    return {_shard}
+
+# Check if an item is a valid Strength Shard
+function isStrengthShard(item: item) :: boolean:
+    if type of {_item} is {@shard-material}:
+        if name of {_item} is colored "{@shard-name}":
+            return true
+    return false
+
+# ===== SHARD COUNTING =====
+# Bug fix #6: Use "off hand tool of %player%" (correct syntax)
+function countShardsInInventory(p: player) :: number:
+    set {_total} to 0
+    
+    # Count shards in inventory (includes offhand since player inventory contains all slots)
+    loop all items in {_p}'s inventory:
+        if isStrengthShard(loop-item) is true:
+            add item amount of loop-item to {_total}
+    
+    # Cap at max effective amount
+    if {_total} is greater than {@max-effective-shards}:
+        set {_total} to {@max-effective-shards}
+    
+    return {_total}
+
+# ===== STAT CALCULATION =====
+function updatePlayerStats(p: player):
+    # Count RAW shards for hard cap enforcement (uncapped)
+    set {_raw-count} to 0
+    loop all items in {_p}'s inventory:
+        if isStrengthShard(loop-item) is true:
+            add item amount of loop-item to {_raw-count}
+    
+    # Enforce hard cap - remove excess shards
+    if {_raw-count} is greater than {@max-shards-in-inventory}:
+        set {_excess} to {_raw-count} - {@max-shards-in-inventory}
+        removeShardsFromPlayer({_p}, {_excess})
+        send colored "{@message-prefix}&cYou had too many shards! &e%{_excess}% &cwere removed." to {_p}
+        set {_raw-count} to {@max-shards-in-inventory}
+    
+    # Use capped count for stats
+    set {_count} to {_raw-count}
+    if {_count} is greater than {@max-effective-shards}:
+        set {_count} to {@max-effective-shards}
+    set {shard-count::%{_p}%} to {_count}
+    
+    # Auto-refresh lore on existing shards so config changes apply immediately
+    loop all items in {_p}'s inventory:
+        if isStrengthShard(loop-item) is true:
+            set {_fresh} to createStrengthShard(item amount of loop-item)
+            set loop-item to {_fresh}
+    
+    # Calculate bonuses
+    set {_damage-bonus} to {_count} * {@damage-per-shard}
+    set {_speed-bonus} to {_count} * {@speed-per-shard}
+    set {_mining-bonus} to {_count} * {@mining-speed-per-shard}
+    
+    # Apply speed bonus using movement speed attribute (affects all movement: walking, jumping, ice, etc.)
+    # Base movement_speed attribute is 0.1, 1% = 0.001
+    if {shard-toggle-speed::%{_p}%} is not "&cOFF":
+        set {_new-speed} to 0.1 + ({_speed-bonus} * 0.001)
+        set {_p}'s movement speed attribute to {_new-speed}
+    
+    # Apply mining speed bonus (base block_break_speed is 1.0, 1% = 0.01)
+    if {shard-toggle-mining::%{_p}%} is not "&cOFF":
+        set {_new-mining} to 1.0 + ({_mining-bonus} * 0.01)
+        set {_p}'s block break speed attribute to {_new-mining}
+    
+    if {@debug-mode} is true:
+        send "[DEBUG] Updated stats for %{_p}%: %{_count}% shards, +%{_damage-bonus}%%% damage, +%{_speed-bonus}%%% speed, +%{_mining-bonus}%%% mining" to console
+    
+    # Display stats to player only when holding a shard in hand
+    if {_count} is greater than 0:
+        # Show blue + tag above player name via scoreboard team prefix
+        if {_count} is greater than or equal to {@tag-min-shards}:
+            if {shard-tagged::%{_p}%} is not set:
+                execute console command "team add shardcarriers"
+                execute console command "team modify shardcarriers prefix {""text"":""+  "",""color"":""aqua""}"
+                execute console command "team join shardcarriers %{_p}%"
+                set {shard-tagged::%{_p}%} to true
+            set {_p}'s display name to "&b+ &r%name of {_p}%"
+            set {_p}'s tab list name to "&b+ &r%name of {_p}%"
+        else:
+            if {shard-tagged::%{_p}%} is set:
+                execute console command "team leave %{_p}%"
+                delete {shard-tagged::%{_p}%}
+            set {_p}'s display name to name of {_p}
+            set {_p}'s tab list name to name of {_p}
+        if {_p}'s tool is {@shard-material}:
+            set {_msg} to colored "{@message-prefix}{@msg-stats-display}"
+            replace all "{count}" with "%{_count}%" in {_msg}
+            replace all "{damage}" with "%{_damage-bonus}%" in {_msg}
+            replace all "{speed}" with "%{_speed-bonus}%" in {_msg}
+            replace all "{mining}" with "%{_mining-bonus}%" in {_msg}
+            send action bar {_msg} to {_p}
+        else if {_p}'s off hand tool is {@shard-material}:
+            set {_msg} to colored "{@message-prefix}{@msg-stats-display}"
+            replace all "{count}" with "%{_count}%" in {_msg}
+            replace all "{damage}" with "%{_damage-bonus}%" in {_msg}
+            replace all "{speed}" with "%{_speed-bonus}%" in {_msg}
+            replace all "{mining}" with "%{_mining-bonus}%" in {_msg}
+            send action bar {_msg} to {_p}
+    else:
+        # Remove the tag when player has no shards
+        if {shard-tagged::%{_p}%} is set:
+            execute console command "team leave %{_p}%"
+            delete {shard-tagged::%{_p}%}
+        set {_p}'s display name to name of {_p}
+        set {_p}'s tab list name to name of {_p}
+
+# ===== SHARD REMOVAL HELPER =====
+# Bug fix #11, #12: Use "is less than" / "is greater than" instead of < / >
+function removeShardsFromPlayer(p: player, amount: number) :: number:
+    set {_removed} to 0
+    loop all items in {_p}'s inventory:
+        if isStrengthShard(loop-item) is true:
+            if {_removed} is less than {_amount}:
+                set {_to-remove} to {_amount} - {_removed}
+                if {_to-remove} is greater than item amount of loop-item:
+                    set {_to-remove} to item amount of loop-item
+                remove {_to-remove} of loop-item from {_p}'s inventory
+                add {_to-remove} to {_removed}
+    return {_removed}
+
+# ===== DAMAGE MODIFIER =====
+# Apply damage bonus when player attacks (works in ALL worlds)
+on damage:
+    if attacker is a player:
+        if {shard-toggle-damage::%attacker%} is not "&cOFF":
+            if {shard-count::%attacker%} is set:
+                set {_count} to {shard-count::%attacker%}
+                if {_count} is greater than 0:
+                    set {_bonus} to {_count} * {@damage-per-shard}
+                    set {_multiplier} to 1 + ({_bonus} / 100)
+                    set damage to damage * {_multiplier}
+                    
+                    if {@debug-mode} is true:
+                        send "[DEBUG] %attacker% dealt damage with +%{_bonus}%%% bonus" to console
+
+# ===== PERIODIC STAT UPDATE =====
+every 5 ticks:
+    loop all players:
+        updatePlayerStats(loop-player)
+
+# ===== SHARD DECAY =====
+# Slowly removes shards from players above the decay threshold
+every 1 second:
+    if {@decay-threshold} is greater than 0:
+        loop all players:
+            set {_count} to countShardsInInventory(loop-player)
+            if {_count} is greater than {@decay-threshold}:
+                # Check if enough time has passed for decay
+                if {decay-timer::%loop-player%} is not set:
+                    set {decay-timer::%loop-player%} to 0
+                add 1 to {decay-timer::%loop-player%}
+                if {decay-timer::%loop-player%} is greater than or equal to {@decay-interval}:
+                    set {decay-timer::%loop-player%} to 0
+                    removeShardsFromPlayer(loop-player, 1)
+                    send colored "{@message-prefix}&eA Strength Shard has decayed from your inventory..." to loop-player
+            else:
+                delete {decay-timer::%loop-player%}
+
+# ===== PLAYER JOIN =====
+on join:
+    wait 5 ticks
+    updatePlayerStats(player)
+
+# ===== INVENTORY CHANGE DETECTION =====
+
+# Block shift-clicking shards (prevents transfer into containers)
+on inventory click at echo shard:
+    if click type is left mouse button with shift:
+        cancel event
+        send colored "{@message-prefix}&cYou cannot shift-click Strength Shards!" to player
+        stop
+    if click type is right mouse button with shift:
+        cancel event
+        send colored "{@message-prefix}&cYou cannot shift-click Strength Shards!" to player
+        stop
+
+# Block placing shards into containers (any method)
+on inventory click:
+    if event-inventory is not player's inventory:
+        # Player has a container open
+        # Block if the clicked item is a shard (trying to move it out via number keys etc.)
+        if event-item is {@shard-material}:
+            if clicked inventory is not player's inventory:
+                cancel event
+                send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
+                stop
+        # Block if cursor is holding a shard and clicking into the container
+        if cursor slot of player is {@shard-material}:
+            if clicked inventory is not player's inventory:
+                cancel event
+                send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
+                stop
+    wait 1 tick
+    updatePlayerStats(player)
+
+on inventory close:
+    wait 1 tick
+    updatePlayerStats(player)
+
+on swap hand items:
+    wait 1 tick
+    updatePlayerStats(player)
+
+on inventory drag:
+    # Prevent dragging shards into containers
+    if event-inventory is not player's inventory:
+        if cursor slot of player is {@shard-material}:
+            cancel event
+            send colored "{@message-prefix}&cYou cannot store Strength Shards in containers!" to player
+            stop
+    wait 1 tick
+    updatePlayerStats(player)
+
+on drop:
+    # If player drops any echo shard (which can only be a Strength Shard), block it
+    if event-item is {@shard-material}:
+        cancel event
+        send colored "{@message-prefix}&cYou cannot drop Strength Shards!" to player
+        stop
+    wait 1 tick
+    updatePlayerStats(player)
+
+# Bug fix #7: Use "event-item" which is valid in pickup events in Skript 2.15.3
+on pick up:
+    if {@prevent-natural-echo-shards} is true:
+        if type of event-item is {@shard-material}:
+            if isStrengthShard(event-item) is false:
+                cancel event
+                send colored "{@message-prefix}{@msg-shard-restricted}" to player
+                if {@debug-mode} is true:
+                    send "[DEBUG] Prevented %player% from picking up natural echo shard" to console
+                stop
+    
+    # Update player stats after successful pickup
+    wait 1 tick
+    updatePlayerStats(player)
+
+# ===== WORLD CHANGE =====
+on world change:
+    wait 1 tick
+    updatePlayerStats(player)
+
+# ===== PVP DEATH HANDLING =====
+on death of player:
+    # Count victim's shards before death
+    set {_victim-shards} to countShardsInInventory(victim)
+    
+    # Calculate shards to drop
+    if {@drop-all-shards-on-death} is true:
+        set {_drop-amount} to {_victim-shards}
+    else:
+        set {_drop-amount} to round({_victim-shards} * {@percent-shards-dropped} / 100)
+    
+    # Collect non-shard drops to preserve them, then clear and re-add
+    set {_keep::*} to drops
+    clear drops
+    loop {_keep::*}:
+        if isStrengthShard(loop-value) is false:
+            add loop-value to drops
+    
+    # Drop calculated amount of shards
+    if {_drop-amount} is greater than 0:
+        drop createStrengthShard({_drop-amount}) at victim
+        send colored "{@message-prefix}{@msg-shards-lost}" to victim
+    
+    # Handle PvP kill rewards
+    if attacker is a player:
+        # Calculate reward shards
+        set {_min} to {@min-shards-on-kill}
+        set {_max} to {@max-shards-on-kill}
+        
+        if {_min} is {_max}:
+            set {_reward} to {_min}
+        else:
+            set {_reward} to random integer between {_min} and {_max}
+        
+        # Only give reward if greater than 0
+        if {_reward} is greater than 0:
+            set {_shard-item} to createStrengthShard({_reward})
+            give {_shard-item} to attacker
+            # Drop at feet if inventory was full
+            if attacker does not have {_shard-item}:
+                drop {_shard-item} at attacker
+            
+            set {_msg} to colored "{@message-prefix}{@msg-shards-gained}"
+            replace all "{amount}" with "%{_reward}%" in {_msg}
+            send {_msg} to attacker
+        
+        # Notify about victim's dropped shards
+        if {@killer-gets-victim-shards} is true:
+            if {_drop-amount} is greater than 0:
+                send colored "{@message-prefix}&7The victim dropped &e%{_drop-amount}% &7additional shard(s)!" to attacker
+        
+        if {@debug-mode} is true:
+            send "[DEBUG] %attacker% killed %victim% and gained %{_reward}% shards. Victim dropped %{_drop-amount}% shards." to console
+    
+    # Clear victim's shard count
+    delete {shard-count::%victim%}
+
+# ===== PREVENT NATURAL ECHO SHARDS =====
+
+# Prevent Echo Shards from chest loot
+on inventory open:
+    if {@prevent-natural-echo-shards} is true:
+        if event-inventory is not player's inventory:
+            loop 54 times:
+                set {_slot} to slot (loop-number - 1) of event-inventory
+                if {_slot} is set:
+                    if type of {_slot} is {@shard-material}:
+                        if isStrengthShard({_slot}) is false:
+                            set slot (loop-number - 1) of event-inventory to air
+                            if {@debug-mode} is true:
+                                send "[DEBUG] Removed natural echo shard from container" to console
+
+# Prevent placing shards
+on place:
+    if {@prevent-shard-placement} is true:
+        if player's tool is {@shard-material}:
+            cancel event
+            send colored "{@message-prefix}&cYou cannot place Strength Shards!" to player
+
+# Prevent placing shards in item frames
+on rightclick on item frame:
+    if player's tool is {@shard-material}:
+        cancel event
+        send colored "{@message-prefix}&cYou cannot put Strength Shards in item frames!" to player
+
+# Prevent hoppers from picking up shards
+on inventory pickup:
+    if event-item is {@shard-material}:
+        cancel event
+
+# Prevent hoppers from moving shards between inventories
+on inventory item move:
+    if event-item is {@shard-material}:
+        cancel event
+
+# Prevent crafting with shards (blocks recovery compass recipe)
+on craft of recovery compass:
+    cancel event
+    send colored "{@message-prefix}&cYou cannot craft with Strength Shards!" to player
+
+# ===== ADMIN COMMANDS =====
+command /strengthshard [<text>] [<player>] [<integer=1>]:
+    aliases: /ss, /shard
+    permission: strengthshard.admin
+    trigger:
+        if arg-1 is not set:
+            send colored "{@message-prefix}&eStrength Shard System &7v1.2.0"
+            send colored "&7/ss give <player> [amount] &f- Give Strength Shards"
+            send colored "&7/ss remove <player> [amount] &f- Remove Strength Shards"
+            send colored "&7/ss check <player> &f- Check player's shard count"
+            send colored "&7/ss purge &f- Remove ALL shards from all online players"
+            send colored "&7/ss reload &f- Reload configuration"
+            send colored "&7/ss debug &f- Toggle debug mode"
+            stop
+        
+        if arg-1 is "give":
+            if arg-2 is not set:
+                send colored "{@message-prefix}&cUsage: /ss give <player> [amount]"
+                stop
+            
+            set {_amount} to arg-3
+            set {_shard} to createStrengthShard({_amount})
+            
+            give {_shard} to arg-2
+            # Drop at feet if inventory was full
+            if arg-2 does not have {_shard}:
+                drop {_shard} at arg-2
+            send colored "{@message-prefix}&aGave &e%{_amount}% &aStrength Shard(s) to &e%arg-2%&a!" to sender
+            set {_msg} to colored "{@message-prefix}{@msg-shards-gained}"
+            replace all "{amount}" with "%{_amount}%" in {_msg}
+            send {_msg} to arg-2
+        
+        else if arg-1 is "remove":
+            if arg-2 is not set:
+                send colored "{@message-prefix}&cUsage: /ss remove <player> [amount]"
+                stop
+            
+            set {_amount} to arg-3
+            set {_removed} to removeShardsFromPlayer(arg-2, {_amount})
+            
+            send colored "{@message-prefix}&aRemoved &e%{_removed}% &aStrength Shard(s) from &e%arg-2%&a!" to sender
+        
+        else if arg-1 is "check":
+            if arg-2 is not set:
+                send colored "{@message-prefix}&cUsage: /ss check <player>"
+                stop
+            
+            set {_count} to countShardsInInventory(arg-2)
+            send colored "{@message-prefix}&e%arg-2% &7has &e%{_count}% &7Strength Shard(s) (capped at {@max-effective-shards})" to sender
+        
+        else if arg-1 is "reload":
+            send colored "{@message-prefix}&aReloading Strength Shard System..." to sender
+            send colored "{@message-prefix}&ePlease use &f/sk reload main &eor &f/sk reload all &eto apply changes" to sender
+        
+        else if arg-1 is "purge":
+            # Remove all shards from every online player
+            set {_total} to 0
+            loop all players:
+                loop all items in loop-player's inventory:
+                    if isStrengthShard(loop-item) is true:
+                        add item amount of loop-item to {_total}
+                        set loop-item to air
+                reset loop-player's movement speed attribute
+                reset loop-player's block break speed attribute
+                delete {shard-count::%loop-player%}
+                if {shard-tagged::%loop-player%} is set:
+                    execute console command "team leave %loop-player%"
+                    delete {shard-tagged::%loop-player%}
+                set loop-player's display name to name of loop-player
+                set loop-player's tab list name to name of loop-player
+            send colored "{@message-prefix}&aRemoved &e%{_total}% &aStrength Shard(s) from all online players." to sender
+            send colored "{@message-prefix}&7Note: Shards in unloaded chunks or offline players cannot be removed." to sender
+        
+        else if arg-1 is "debug":
+            if {@debug-mode} is true:
+                send colored "{@message-prefix}&cDebug mode is currently ENABLED in options" to sender
+                send colored "{@message-prefix}&7Set 'debug-mode: false' in main.sk and reload to disable" to sender
+            else:
+                send colored "{@message-prefix}&aDebug mode is currently DISABLED in options" to sender
+                send colored "{@message-prefix}&7Set 'debug-mode: true' in main.sk and reload to enable" to sender
+        
+        else:
+            send colored "{@message-prefix}&cUnknown subcommand. Use &f/ss &cfor help."
+
+# ===== PLAYER SHARD TOGGLE COMMAND =====
+command /shardtoggle [<text>]:
+    aliases: /st
+    trigger:
+        if arg-1 is not set:
+            set {_speed-status} to "&aON" if {shard-toggle-speed::%player%} is not set else "&cOFF"
+            set {_damage-status} to "&aON" if {shard-toggle-damage::%player%} is not set else "&cOFF"
+            set {_mining-status} to "&aON" if {shard-toggle-mining::%player%} is not set else "&cOFF"
+            send colored "{@message-prefix}&eStrength Shard Toggles:"
+            send colored "&7/st speed &f- Toggle speed boost (%{_speed-status}%&7)"
+            send colored "&7/st damage &f- Toggle damage boost (%{_damage-status}%&7)"
+            send colored "&7/st mining &f- Toggle mining speed (%{_mining-status}%&7)"
+            send colored "&7/st all &f- Toggle all effects"
+            stop
+        
+        if arg-1 is "speed":
+            if {shard-toggle-speed::%player%} is "&cOFF":
+                delete {shard-toggle-speed::%player%}
+                send colored "{@message-prefix}&aSpeed boost &eENABLED"
+            else:
+                set {shard-toggle-speed::%player%} to "&cOFF"
+                reset player's movement speed attribute
+                send colored "{@message-prefix}&cSpeed boost &eDISABLED"
+        
+        else if arg-1 is "damage":
+            if {shard-toggle-damage::%player%} is "&cOFF":
+                delete {shard-toggle-damage::%player%}
+                send colored "{@message-prefix}&aDamage boost &eENABLED"
+            else:
+                set {shard-toggle-damage::%player%} to "&cOFF"
+                send colored "{@message-prefix}&cDamage boost &eDISABLED"
+        
+        else if arg-1 is "mining":
+            if {shard-toggle-mining::%player%} is "&cOFF":
+                delete {shard-toggle-mining::%player%}
+                send colored "{@message-prefix}&aMining speed boost &eENABLED"
+            else:
+                set {shard-toggle-mining::%player%} to "&cOFF"
+                reset player's block break speed attribute
+                send colored "{@message-prefix}&cMining speed boost &eDISABLED"
+        
+        else if arg-1 is "all":
+            if {shard-toggle-speed::%player%} is "&cOFF":
+                delete {shard-toggle-speed::%player%}
+                delete {shard-toggle-damage::%player%}
+                delete {shard-toggle-mining::%player%}
+                send colored "{@message-prefix}&aAll shard effects &eENABLED"
+            else:
+                set {shard-toggle-speed::%player%} to "&cOFF"
+                set {shard-toggle-damage::%player%} to "&cOFF"
+                set {shard-toggle-mining::%player%} to "&cOFF"
+                reset player's movement speed attribute
+                reset player's block break speed attribute
+                send colored "{@message-prefix}&cAll shard effects &eDISABLED"
+        
+        else:
+            send colored "{@message-prefix}&cUnknown option. Use &f/st &cfor help."
+
+# ===== PLAYER DISCONNECT CLEANUP =====
+on quit:
+    delete {shard-count::%player%}
+    reset player's movement speed attribute
+    reset player's block break speed attribute
+    # Remove team tag
+    if {shard-tagged::%player%} is set:
+        execute console command "team leave %player%"
+        delete {shard-tagged::%player%}
+    # Reset display/tab names
+    set player's display name to name of player
+    set player's tab list name to name of player
+
+# ===== SCRIPT LOAD MESSAGE =====
+# Bug fix #13: Use plain strings for console (no "colored" wrapper needed for console)
+on script load:
+    send "&8[&d*&8] &dStrength Shard System (Global) &7v1.2.0 &aLOADED" to console
+    send "&7- Max Effective Shards: &e{@max-effective-shards}" to console
+    send "&7- Stats per Shard: &e+{@damage-per-shard}%% damage, +{@speed-per-shard}%% speed" to console
+    send "&7- Shards work in: &aALL WORLDS" to console
+    send "&7- Shards obtainable in: &aALL WORLDS (PvP)" to console
+    if {@debug-mode} is true:
+        send "&c!! Debug mode is ENABLED" to console
+
+on script unload:
+    send "&8[&d*&8] &dStrength Shard System (Global) &7v1.2.0 &cUNLOADED" to console
+    # Reset all players' speeds and attributes
+    loop all players:
+        reset loop-player's movement speed attribute
+        reset loop-player's block break speed attribute
+        delete {shard-count::%loop-player%}
+        if {shard-tagged::%loop-player%} is set:
+            execute console command "team leave %loop-player%"
+            delete {shard-tagged::%loop-player%}
+        set loop-player's display name to name of loop-player
+        set loop-player's tab list name to name of loop-player
